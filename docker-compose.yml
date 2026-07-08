@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: apcse
+      POSTGRES_PASSWORD: apcse
+      POSTGRES_DB: apcse
+    ports:
+      - "5433:5432"
+    volumes:
+      - apcse_pg_data:/var/lib/postgresql/data
+
+volumes:
+  apcse_pg_data:

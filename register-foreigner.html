@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Foreigner Pre-registration | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE Pre-registration</a>
+      <nav class="site-nav">
+        <a href="index.html">Registration</a>
+        <a href="mypage.html">My Page</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">Foreigner Pre-registration</h1>
+    <p class="page-desc">Please fill in the information below and apply.</p>
+
+    <div class="card">
+      <form id="registerForm" class="form-grid">
+        <div class="field">
+          <label>Name (as on passport) <span class="req">*</span></label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="field">
+          <label>Title / Position <span class="req">*</span></label>
+          <input type="text" name="title" required>
+        </div>
+        <div class="field">
+          <label>Affiliation <span class="req">*</span></label>
+          <input type="text" name="affiliation" required>
+        </div>
+        <div class="field">
+          <label>Contact Information <span class="req">*</span></label>
+          <input type="text" name="contact" required>
+        </div>
+        <div class="form-row-2">
+          <div class="field">
+            <label>Nationality <span class="req">*</span></label>
+            <input type="text" name="nationality" required>
+          </div>
+          <div class="field">
+            <label>Passport Number <span class="req">*</span></label>
+            <input type="text" name="passportNumber" required>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="field">
+            <label>Arrival Date <span class="req">*</span></label>
+            <input type="date" name="arrivalDate" required>
+          </div>
+          <div class="field">
+            <label>Departure Date <span class="req">*</span></label>
+            <input type="date" name="departureDate" required>
+          </div>
+        </div>
+        <div class="field">
+          <label>Dietary Preferences</label>
+          <textarea name="dietary" placeholder="Vegan, Halal, allergies, additional requests, etc."></textarea>
+        </div>
+        <div class="field">
+          <label>Accommodation</label>
+          <label class="checkbox-row">
+            <input type="checkbox" name="accommodation" id="accommodation">
+            I will use accommodation
+          </label>
+          <input type="number" name="accommodationDays" id="accommodationDays" min="1" placeholder="Number of nights" hidden>
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input type="checkbox" name="vehicleUsage">
+            I need vehicle/transportation support
+          </label>
+        </div>
+        <div class="field">
+          <label>Special Requests</label>
+          <textarea name="specialRequests" placeholder="Disability support: seating, transport, wheelchair preparation, etc."></textarea>
+        </div>
+        <div class="field">
+          <label class="checkbox-row">
+            <input type="checkbox" name="privacyConsent">
+            I agree to the collection and use of personal information. (Optional)
+          </label>
+        </div>
+        <div class="field">
+          <label>My Page Password <span class="req">*</span></label>
+          <input type="password" name="password" minlength="4" required>
+        </div>
+        <div class="field">
+          <label>Confirm Password <span class="req">*</span></label>
+          <input type="password" name="passwordConfirm" minlength="4" required>
+        </div>
+
+        <div id="errorBox" class="alert error" hidden></div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">Apply</button>
+          <a href="index.html" class="btn btn-secondary">Back</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("registerForm");
+    const errorBox = document.getElementById("errorBox");
+    const submitBtn = document.getElementById("submitBtn");
+    const accommodation = document.getElementById("accommodation");
+    const accommodationDays = document.getElementById("accommodationDays");
+
+    accommodation.addEventListener("change", () => {
+      accommodationDays.hidden = !accommodation.checked;
+      accommodationDays.required = accommodation.checked;
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+
+      const data = Object.fromEntries(new FormData(form));
+      if (data.password !== data.passwordConfirm) {
+        errorBox.textContent = "Passwords do not match.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      try {
+        const res = await fetch("/api/register/foreigner", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            title: data.title,
+            affiliation: data.affiliation,
+            contact: data.contact,
+            nationality: data.nationality,
+            passportNumber: data.passportNumber,
+            arrivalDate: data.arrivalDate,
+            departureDate: data.departureDate,
+            dietary: data.dietary,
+            accommodation: Boolean(data.accommodation),
+            accommodationDays: data.accommodation ? Number(data.accommodationDays) : null,
+            vehicleUsage: Boolean(data.vehicleUsage),
+            specialRequests: data.specialRequests,
+            privacyConsent: Boolean(data.privacyConsent),
+            password: data.password,
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.error || "Registration failed.");
+        }
+        location.href = `payment.html?registrationId=${result.id}`;
+      } catch (error) {
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Apply";
+      }
+    });
+  </script>
+</body>
+</html>

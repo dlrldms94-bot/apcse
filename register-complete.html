@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>등록 완료 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 사전등록</a>
+      <nav class="site-nav">
+        <a href="index.html">사전등록</a>
+        <a href="mypage.html">마이페이지</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title" id="title">사전등록 완료</h1>
+    <p class="page-desc" id="desc">사전등록이 정상적으로 완료되었습니다.</p>
+
+    <div class="card">
+      <p id="registrationInfo"></p>
+      <p id="guideText" style="margin-top:16px;color:#475569;"></p>
+      <div class="actions" style="margin-top:24px;">
+        <a href="mypage.html" class="btn btn-primary" id="mypageBtn">마이페이지로 이동</a>
+        <a href="index.html" class="btn btn-secondary" id="homeBtn">홈으로</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    const type = params.get("type");
+    const id = params.get("id");
+    const isForeigner = type === "foreigner";
+
+    if (isForeigner) {
+      document.documentElement.lang = "en";
+      document.getElementById("title").textContent = "Registration Complete";
+      document.getElementById("desc").textContent = "Your payment and pre-registration have been completed.";
+      document.getElementById("guideText").textContent =
+        "You can view and edit your information on My Page using your name and password.";
+      document.getElementById("mypageBtn").textContent = "Go to My Page";
+      document.getElementById("homeBtn").textContent = "Home";
+    } else {
+      document.getElementById("guideText").textContent =
+        "마이페이지에서 이름과 비밀번호로 등록 정보를 확인·수정할 수 있습니다.";
+    }
+
+    if (id) {
+      document.getElementById("registrationInfo").innerHTML =
+        `${isForeigner ? "Registration ID" : "등록 번호"}: <strong>${id}</strong>`;
+    }
+  </script>
+</body>
+</html>

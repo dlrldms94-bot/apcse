@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내국인 사전등록 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 사전등록</a>
+      <nav class="site-nav">
+        <a href="index.html">사전등록</a>
+        <a href="mypage.html">마이페이지</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">내국인 사전등록</h1>
+    <p class="page-desc">아래 정보를 입력하고 신청해 주세요.</p>
+
+    <div class="card">
+      <form id="registerForm" class="form-grid">
+        <div class="field">
+          <label>이름 <span class="req">*</span></label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="field">
+          <label>직함 / 직책 <span class="req">*</span></label>
+          <input type="text" name="title" required>
+        </div>
+        <div class="field">
+          <label>소속 <span class="req">*</span></label>
+          <input type="text" name="affiliation" required>
+        </div>
+        <div class="field">
+          <label>연락처 <span class="req">*</span></label>
+          <input type="text" name="contact" required>
+        </div>
+        <div class="field">
+          <label>개인정보 수집·이용 동의</label>
+          <label class="checkbox-row">
+            <input type="checkbox" name="privacyConsent">
+            개인정보 수집·이용에 동의합니다. (선택)
+          </label>
+        </div>
+        <div class="field">
+          <label>마이페이지 확인용 비밀번호 <span class="req">*</span></label>
+          <input type="password" name="password" minlength="4" required>
+          <p class="hint">마이페이지에서 정보를 확인·수정할 때 사용합니다.</p>
+        </div>
+        <div class="field">
+          <label>비밀번호 확인 <span class="req">*</span></label>
+          <input type="password" name="passwordConfirm" minlength="4" required>
+        </div>
+
+        <div id="errorBox" class="alert error" hidden></div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">신청하기</button>
+          <a href="index.html" class="btn btn-secondary">돌아가기</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("registerForm");
+    const errorBox = document.getElementById("errorBox");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+
+      const data = Object.fromEntries(new FormData(form));
+      if (data.password !== data.passwordConfirm) {
+        errorBox.textContent = "비밀번호가 일치하지 않습니다.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "처리 중...";
+
+      try {
+        const res = await fetch("/api/register/domestic", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: data.name,
+            title: data.title,
+            affiliation: data.affiliation,
+            contact: data.contact,
+            privacyConsent: Boolean(data.privacyConsent),
+            password: data.password,
+          }),
+        });
+        const result = await res.json();
+        if (!res.ok) {
+          throw new Error(result.error || "등록에 실패했습니다.");
+        }
+        location.href = `register-complete.html?type=domestic&id=${result.id}`;
+      } catch (error) {
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = "신청하기";
+      }
+    });
+  </script>
+</body>
+</html>

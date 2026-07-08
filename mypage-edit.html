@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>내 정보 수정 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 사전등록</a>
+      <nav class="site-nav">
+        <a href="index.html">사전등록</a>
+        <a href="mypage.html">마이페이지</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">내 정보 수정</h1>
+    <p class="page-desc">등록하신 정보를 확인하고 수정할 수 있습니다.</p>
+
+    <div class="card">
+      <div id="statusBox" class="alert info" hidden></div>
+      <div id="errorBox" class="alert error" hidden></div>
+      <div id="successBox" class="alert success" hidden></div>
+      <form id="editForm" class="form-grid" hidden></form>
+      <p id="loadingText">불러오는 중...</p>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("editForm");
+    const statusBox = document.getElementById("statusBox");
+    const errorBox = document.getElementById("errorBox");
+    const successBox = document.getElementById("successBox");
+    const loadingText = document.getElementById("loadingText");
+    let registration = null;
+
+    function field(label, name, value, options = {}) {
+      const type = options.type || "text";
+      const required = options.required ? "required" : "";
+      const disabled = options.disabled ? "disabled" : "";
+      const hidden = options.hidden ? "hidden" : "";
+      if (type === "textarea") {
+        return `<div class="field" ${hidden}><label>${label}</label><textarea name="${name}" ${required}>${value || ""}</textarea></div>`;
+      }
+      if (type === "checkbox") {
+        return `<div class="field" ${hidden}><label class="checkbox-row"><input type="checkbox" name="${name}" ${value ? "checked" : ""}> ${label}</label></div>`;
+      }
+      return `<div class="field" ${hidden}><label>${label}</label><input type="${type}" name="${name}" value="${value || ""}" ${required} ${disabled}></div>`;
+    }
+
+    function renderForm(data) {
+      const isForeigner = data.type === "FOREIGNER";
+      statusBox.innerHTML = `등록 유형: <strong>${isForeigner ? "외국인" : "내국인"}</strong>` +
+        (isForeigner ? ` / 결제 상태: <strong>${data.paymentStatus === "PAID" ? "결제 완료" : data.paymentStatus === "PENDING" ? "결제 대기" : data.paymentStatus}</strong>` : "");
+      statusBox.hidden = false;
+
+      form.innerHTML = `
+        ${field("이름", "name", data.name, { disabled: true })}
+        ${field("직함 / 직책", "title", data.title, { required: true })}
+        ${field("소속", "affiliation", data.affiliation, { required: true })}
+        ${field("연락처", "contact", data.contact, { required: true })}
+        ${isForeigner ? field("국적", "nationality", data.nationality, { required: true }) : ""}
+        ${isForeigner ? field("여권번호", "passportNumber", data.passportNumber, { required: true }) : ""}
+        ${isForeigner ? field("입국일", "arrivalDate", data.arrivalDate, { type: "date", required: true }) : ""}
+        ${isForeigner ? field("출국일", "departureDate", data.departureDate, { type: "date", required: true }) : ""}
+        ${isForeigner ? field("식성", "dietary", data.dietary, { type: "textarea" }) : ""}
+        ${isForeigner ? field("숙박 이용", "accommodation", data.accommodation, { type: "checkbox" }) : ""}
+        ${isForeigner ? field("숙박 일수", "accommodationDays", data.accommodationDays, { type: "number", hidden: data.accommodation ? "" : "hidden" }) : ""}
+        ${isForeigner ? field("차량 이용", "vehicleUsage", data.vehicleUsage, { type: "checkbox" }) : ""}
+        ${isForeigner ? field("특이 요청사항", "specialRequests", data.specialRequests, { type: "textarea" }) : ""}
+        ${field("개인정보 동의", "privacyConsent", data.privacyConsent, { type: "checkbox" })}
+        ${field("새 비밀번호", "password", "", { type: "password" })}
+        <div class="actions">
+          <button type="submit" class="btn btn-primary">저장하기</button>
+          <button type="button" class="btn btn-secondary" id="logoutBtn">로그아웃</button>
+          ${isForeigner && data.paymentStatus === "PENDING" ? `<a href="payment.html?registrationId=${data.id}" class="btn btn-secondary">결제하러 가기</a>` : ""}
+        </div>
+      `;
+
+      const accommodation = form.querySelector('[name="accommodation"]');
+      const accommodationDays = form.querySelector('[name="accommodationDays"]');
+      if (accommodation && accommodationDays) {
+        accommodation.addEventListener("change", () => {
+          accommodationDays.closest(".field").hidden = !accommodation.checked;
+        });
+      }
+
+      document.getElementById("logoutBtn").addEventListener("click", async () => {
+        await fetch("/api/mypage/logout", { method: "POST" });
+        location.href = "mypage.html";
+      });
+
+      form.hidden = false;
+      loadingText.hidden = true;
+    }
+
+    async function loadRegistration() {
+      const res = await fetch("/api/mypage/me");
+      if (res.status === 401) {
+        location.href = "mypage.html";
+        return;
+      }
+      const data = await res.json();
+      if (!res.ok) {
+        errorBox.textContent = data.error || "정보를 불러오지 못했습니다.";
+        errorBox.hidden = false;
+        loadingText.hidden = true;
+        return;
+      }
+      registration = data.registration;
+      renderForm(registration);
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+      successBox.hidden = true;
+
+      const formData = Object.fromEntries(new FormData(form));
+      const payload = {
+        title: formData.title,
+        affiliation: formData.affiliation,
+        contact: formData.contact,
+        privacyConsent: Boolean(formData.privacyConsent),
+      };
+
+      if (registration.type === "FOREIGNER") {
+        Object.assign(payload, {
+          nationality: formData.nationality,
+          passportNumber: formData.passportNumber,
+          arrivalDate: formData.arrivalDate,
+          departureDate: formData.departureDate,
+          dietary: formData.dietary,
+          accommodation: Boolean(formData.accommodation),
+          accommodationDays: formData.accommodation ? Number(formData.accommodationDays) : null,
+          vehicleUsage: Boolean(formData.vehicleUsage),
+          specialRequests: formData.specialRequests,
+        });
+      }
+
+      if (formData.password) payload.password = formData.password;
+
+      const res = await fetch("/api/mypage/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (!res.ok) {
+        errorBox.textContent = result.error || "저장에 실패했습니다.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      registration = result.registration;
+      successBox.textContent = result.message || "정보가 저장되었습니다.";
+      successBox.hidden = false;
+    });
+
+    loadRegistration();
+  </script>
+</body>
+</html>

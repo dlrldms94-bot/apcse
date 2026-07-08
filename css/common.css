@@ -1,0 +1,130 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
+
+body {
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.site-header {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.site-header-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.site-nav a {
+  margin-left: 16px;
+  color: #475569;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.site-nav a:hover {
+  color: #0f172a;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.page-desc {
+  color: #64748b;
+  margin-bottom: 32px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.choice-btn.primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.choice-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.choice-btn.secondary {
+  background: #fff;
+  color: #1d4ed8;
+  border: 2px solid #bfdbfe;
+}
+
+.choice-btn.secondary:hover {
+  background: #eff6ff;
+}
+
+.choice-btn small {
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alert.error {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.alert.success {
+  background: #f0fdf4;
+  color: #16a34a;
+}
+
+.alert.info {
+  background: #eff6ff;
+  color: #1d4ed8;
+}

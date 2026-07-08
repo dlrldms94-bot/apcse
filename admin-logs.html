@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 로그 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 관리자</a>
+      <nav class="site-nav">
+        <a href="admin-logs.html">로그</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">관리자 로그</h1>
+    <p class="page-desc">신청자(성공)와 신청 시도자(시도/실패) 기록입니다. Render Logs에서도 동일한 서버 로그를 확인할 수 있습니다.</p>
+
+    <div id="loginSection" class="card login-box">
+      <form id="loginForm" class="form-grid">
+        <div class="field">
+          <label>관리자 비밀번호</label>
+          <input type="password" id="adminPassword" required>
+        </div>
+        <div id="loginError" class="alert error" hidden></div>
+        <button type="submit" class="btn btn-primary">로그인</button>
+      </form>
+    </div>
+
+    <div id="dashboardSection" class="card" hidden>
+      <div id="summaryGrid" class="summary-grid"></div>
+      <div class="filter-row">
+        <select id="statusFilter">
+          <option value="">전체 상태</option>
+          <option value="ATTEMPT">시도</option>
+          <option value="SUCCESS">성공</option>
+          <option value="FAILURE">실패</option>
+        </select>
+        <select id="categoryFilter">
+          <option value="">전체 분류</option>
+          <option value="REGISTRATION">사전등록</option>
+          <option value="PAYMENT">결제</option>
+          <option value="MYPAGE">마이페이지</option>
+        </select>
+        <button type="button" class="btn btn-secondary" id="refreshBtn">새로고침</button>
+      </div>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>시간</th>
+              <th>상태</th>
+              <th>분류</th>
+              <th>이벤트</th>
+              <th>이름</th>
+              <th>연락처</th>
+              <th>등록ID</th>
+              <th>오류</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let adminPassword = "";
+
+    function badgeClass(status) {
+      if (status === "SUCCESS") return "success";
+      if (status === "FAILURE") return "failure";
+      return "attempt";
+    }
+
+    async function loadLogs() {
+      const params = new URLSearchParams();
+      const status = document.getElementById("statusFilter").value;
+      const category = document.getElementById("categoryFilter").value;
+      if (status) params.set("status", status);
+      if (category) params.set("category", category);
+
+      const res = await fetch(`/api/admin/logs?${params.toString()}`, {
+        headers: { "x-admin-password": adminPassword },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "로그 조회 실패");
+
+      document.getElementById("summaryGrid").innerHTML = `
+        <div class="summary-card"><p>전체</p><strong>${data.summary.total}</strong></div>
+        <div class="summary-card attempt"><p>시도</p><strong>${data.summary.attempts}</strong></div>
+        <div class="summary-card success"><p>성공(신청자)</p><strong>${data.summary.successes}</strong></div>
+        <div class="summary-card failure"><p>실패(시도자)</p><strong>${data.summary.failures}</strong></div>
+      `;
+
+      document.getElementById("logTableBody").innerHTML = data.logs.map((log) => `
+        <tr>
+          <td>${new Date(log.created_at).toLocaleString("ko-KR")}</td>
+          <td><span class="badge ${badgeClass(log.status)}">${log.status}</span></td>
+          <td>${log.category}</td>
+          <td>${log.event}</td>
+          <td>${log.applicant_name || "-"}</td>
+          <td>${log.contact || "-"}</td>
+          <td style="font-family:monospace;font-size:12px;">${log.registration_id || "-"}</td>
+          <td style="color:#dc2626;">${log.error_message || "-"}</td>
+        </tr>
+      `).join("");
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      adminPassword = document.getElementById("adminPassword").value;
+      try {
+        await loadLogs();
+        document.getElementById("loginSection").hidden = true;
+        document.getElementById("dashboardSection").hidden = false;
+      } catch (error) {
+        const loginError = document.getElementById("loginError");
+        loginError.textContent = error.message;
+        loginError.hidden = false;
+      }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadLogs);
+    document.getElementById("statusFilter").addEventListener("change", loadLogs);
+    document.getElementById("categoryFilter").addEventListener("change", loadLogs);
+  </script>
+</body>
+</html>

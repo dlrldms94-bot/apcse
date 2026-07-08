@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>마이페이지 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 사전등록</a>
+      <nav class="site-nav">
+        <a href="index.html">사전등록</a>
+        <a href="mypage.html">마이페이지</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">마이페이지</h1>
+    <p class="page-desc">등록 시 설정한 이름과 확인용 비밀번호를 입력해 주세요.</p>
+
+    <div class="card login-box">
+      <form id="loginForm" class="form-grid">
+        <div class="field">
+          <label>이름 <span class="req">*</span></label>
+          <input type="text" name="name" required>
+        </div>
+        <div class="field">
+          <label>확인용 비밀번호 <span class="req">*</span></label>
+          <input type="password" name="password" required>
+        </div>
+        <div id="errorBox" class="alert error" hidden></div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn">확인</button>
+          <a href="index.html" class="btn btn-secondary">돌아가기</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const errorBox = document.getElementById("errorBox");
+    const submitBtn = document.getElementById("submitBtn");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errorBox.hidden = true;
+      submitBtn.disabled = true;
+
+      const data = Object.fromEntries(new FormData(form));
+      try {
+        const res = await fetch("/api/mypage/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        });
+        const result = await res.json();
+        if (!res.ok) throw new Error(result.error || "인증에 실패했습니다.");
+        location.href = "mypage-edit.html";
+      } catch (error) {
+        errorBox.textContent = error.message;
+        errorBox.hidden = false;
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
