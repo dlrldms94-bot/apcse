@@ -88,9 +88,12 @@
       if (category) params.set("category", category);
 
       const res = await fetch(`/api/admin/logs?${params.toString()}`, {
-        headers: { "x-admin-password": adminPassword },
+        headers: { "x-admin-password": adminPassword.trim() },
       });
       const data = await res.json();
+      if (res.status === 401) {
+        throw new Error("비밀번호가 일치하지 않습니다. Render Environment의 ADMIN_PASSWORD를 확인해주세요.");
+      }
       if (!res.ok) throw new Error(data.error || "로그 조회 실패");
 
       document.getElementById("summaryGrid").innerHTML = `
@@ -116,7 +119,7 @@
 
     document.getElementById("loginForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      adminPassword = document.getElementById("adminPassword").value;
+      adminPassword = document.getElementById("adminPassword").value.trim();
       try {
         await loadLogs();
         document.getElementById("loginSection").hidden = true;

@@ -24,7 +24,7 @@ const HTML_PAGES = [
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "apcse2026!";
+const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "apcse2026!").trim();
 const SESSION_COOKIE = "apcse_session";
 const REGISTRATION_FEE = {
   amount: Number(process.env.REGISTRATION_FEE_AMOUNT || 100),
@@ -71,7 +71,8 @@ function clearSession(res) {
 }
 
 function verifyAdmin(req) {
-  return req.headers["x-admin-password"] === ADMIN_PASSWORD;
+  const inputPassword = String(req.headers["x-admin-password"] || "").trim();
+  return inputPassword === ADMIN_PASSWORD;
 }
 
 function serializeRegistration(row) {
