@@ -1,11 +1,26 @@
 require("dotenv").config();
 
+const path = require("path");
+const fs = require("fs");
 const express = require("express");
 const cookieParser = require("cookie-parser");
 const { pool, initDatabase } = require("./lib/db");
 const { hashPassword, verifyPassword } = require("./lib/password");
 const { serverLog, getRequestMeta, sanitizePayload } = require("./lib/logger");
 const { createPayPalOrder, capturePayPalOrder } = require("./lib/paypal");
+
+const ROOT_DIR = __dirname;
+const HTML_PAGES = [
+  "index.html",
+  "register-domestic.html",
+  "register-foreigner.html",
+  "payment.html",
+  "register-complete.html",
+  "mypage.html",
+  "mypage-edit.html",
+  "admin-logs.html",
+  "preview.html",
+];
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +33,25 @@ const REGISTRATION_FEE = {
 
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser(process.env.SESSION_SECRET || "apcse-dev-secret"));
-app.use(express.static(__dirname));
+app.use("/css", express.static(path.join(ROOT_DIR, "css")));
+
+function sendHtmlPage(res, filename) {
+  const filePath = path.join(ROOT_DIR, filename);
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send("Not Found");
+  }
+  return res.sendFile(filePath);
+}
+
+HTML_PAGES.forEach((filename) => {
+  const route = filename === "index.html" ? "/" : `/${filename}`;
+  app.get(route, (req, res) => sendHtmlPage(res, filename));
+  if (filename === "index.html") {
+    app.get("/index.html", (req, res) => sendHtmlPage(res, filename));
+  }
+});
+
+app.use(express.static(ROOT_DIR));
 
 function getSessionRegistrationId(req) {
   const signed = req.signedCookies[SESSION_COOKIE];
