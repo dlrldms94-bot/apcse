@@ -51,8 +51,6 @@ HTML_PAGES.forEach((filename) => {
   }
 });
 
-app.use(express.static(ROOT_DIR));
-
 function getSessionRegistrationId(req) {
   const signed = req.signedCookies[SESSION_COOKIE];
   return typeof signed === "string" ? signed : null;
@@ -827,6 +825,8 @@ app.get("/api/admin/registrations", async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
+app.use(express.static(ROOT_DIR));
 
 initDatabase()
   .then(() => {
