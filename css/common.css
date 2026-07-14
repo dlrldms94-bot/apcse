@@ -1,5 +1,10 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css");
 
+:root {
+  --apcse-primary: #1fa8a0;
+  --apcse-primary-dark: #178f88;
+}
+
 body {
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
   background: #f8fafc;
@@ -24,7 +29,7 @@ body {
 .logo {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
+  color: #111;
 }
 
 .site-nav a {
@@ -82,22 +87,22 @@ body {
 }
 
 .choice-btn.primary {
-  background: #2563eb;
+  background: #1fa8a0;
   color: #fff;
 }
 
 .choice-btn.primary:hover {
-  background: #1d4ed8;
+  background: #178f88;
 }
 
 .choice-btn.secondary {
   background: #fff;
-  color: #1d4ed8;
-  border: 2px solid #bfdbfe;
+  color: #1fa8a0;
+  border: 2px solid #1fa8a0;
 }
 
 .choice-btn.secondary:hover {
-  background: #eff6ff;
+  background: rgba(31, 168, 160, 0.06);
 }
 
 .choice-btn small {

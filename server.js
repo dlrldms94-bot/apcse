@@ -84,6 +84,26 @@ function serializeRegistration(row) {
     title: row.title,
     affiliation: row.affiliation,
     contact: row.contact,
+    email: row.email,
+    affiliationType: row.affiliation_type,
+    affiliationTypeOther: row.affiliation_type_other,
+    attendanceDates: row.attendance_dates || [],
+    teacherDocumentNeeded: row.teacher_document_needed,
+    givenName: row.given_name,
+    familyName: row.family_name,
+    preferredName: row.preferred_name,
+    whatsappId: row.whatsapp_id,
+    visaSupportNeeded: row.visa_support_needed,
+    arrivalDatetime: row.arrival_datetime,
+    departureDatetime: row.departure_datetime,
+    arrivalFlightNumber: row.arrival_flight_number,
+    departureFlightNumber: row.departure_flight_number,
+    transportationOptions: row.transportation_options || [],
+    accommodationType: row.accommodation_type,
+    checkInDate: row.check_in_date,
+    checkOutDate: row.check_out_date,
+    dietaryPreference: row.dietary_preference,
+    dietaryDetails: row.dietary_details,
     privacyConsent: row.privacy_consent,
     nationality: row.nationality,
     passportNumber: row.passport_number,
@@ -101,6 +121,50 @@ function serializeRegistration(row) {
     updatedAt: row.updated_at,
   };
 }
+
+const AFFILIATION_TYPES = new Set([
+  "TEACHER_K12",
+  "PROFESSOR",
+  "STUDENT",
+  "GOVERNMENT",
+  "IT_EDU_CORP",
+  "OTHER",
+]);
+
+function isValidPassword(password) {
+  return /^[A-Za-z0-9]{4,8}$/.test(String(password));
+}
+
+function isValidPhone(phone) {
+  return /^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(String(phone));
+}
+
+function splitDatetime(datetime) {
+  if (!datetime || !datetime.includes("T")) {
+    return { date: "", time: "" };
+  }
+  const [date, time] = datetime.split("T");
+  return { date, time: time.slice(0, 5) };
+}
+
+const FOREIGNER_ATTENDANCE_DATES = new Set([
+  "2026-10-14",
+  "2026-10-15",
+  "2026-10-16",
+]);
+
+const DIETARY_PREFERENCES = new Set([
+  "NO_RESTRICTION",
+  "VEGETARIAN",
+  "HALAL",
+  "NO_PORK",
+  "NO_BEEF",
+  "OTHER",
+]);
+
+const TRANSPORTATION_OPTIONS = new Set(["PICKUP", "DROPOFF", "NONE"]);
+
+const ACCOMMODATION_TYPES = new Set(["ORGANIZER", "OWN"]);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true });
@@ -123,15 +187,37 @@ app.post("/api/register/domestic", async (req, res) => {
     status: "ATTEMPT",
     registrationType: "DOMESTIC",
     applicantName: body.name,
-    contact: body.contact,
+    contact: body.phone || body.contact,
     ipAddress,
     userAgent,
     metadata: { payload: sanitizePayload(body) },
   });
 
-  const { name, title, affiliation, contact, privacyConsent, password } = body;
+  const {
+    name,
+    title,
+    affiliation,
+    affiliationType,
+    affiliationTypeOther,
+    phone,
+    email,
+    attendanceDates,
+    teacherDocumentNeeded,
+    privacyConsent,
+    password,
+  } = body;
 
-  if (!name || !title || !affiliation || !contact || !password) {
+  if (
+    !name ||
+    !title ||
+    !affiliation ||
+    !affiliationType ||
+    !phone ||
+    !email ||
+    !password ||
+    !Array.isArray(attendanceDates) ||
+    !attendanceDates.length
+  ) {
     const errorMessage = "필수 항목을 모두 입력해주세요.";
     await serverLog({
       event: "registration.domestic.failure",
@@ -139,7 +225,7 @@ app.post("/api/register/domestic", async (req, res) => {
       status: "FAILURE",
       registrationType: "DOMESTIC",
       applicantName: name,
-      contact,
+      contact: phone,
       errorMessage,
       statusCode: 400,
       ipAddress,
@@ -149,15 +235,60 @@ app.post("/api/register/domestic", async (req, res) => {
     return res.status(400).json({ error: errorMessage });
   }
 
-  if (String(password).length < 4) {
-    const errorMessage = "비밀번호는 4자 이상이어야 합니다.";
+  if (!privacyConsent) {
+    const errorMessage = "개인정보 수집·이용에 동의해야 사전등록이 가능합니다.";
     await serverLog({
       event: "registration.domestic.failure",
       category: "REGISTRATION",
       status: "FAILURE",
       registrationType: "DOMESTIC",
       applicantName: name,
-      contact,
+      contact: phone,
+      errorMessage,
+      statusCode: 400,
+      ipAddress,
+      userAgent,
+    });
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (!AFFILIATION_TYPES.has(affiliationType)) {
+    const errorMessage = "소속 유형을 올바르게 선택해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (affiliationType === "OTHER" && !affiliationTypeOther) {
+    const errorMessage = "기타 소속 유형을 입력해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (!isValidPhone(phone)) {
+    const errorMessage = "휴대폰 번호는 하이픈(-)을 포함하여 입력해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (!email.includes("@")) {
+    const errorMessage = "이메일 주소를 정확히 입력해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const validDates = attendanceDates.every((date) =>
+    ["2026-10-15", "2026-10-16"].includes(date),
+  );
+  if (!validDates) {
+    const errorMessage = "참석 희망일을 올바르게 선택해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (!isValidPassword(password)) {
+    const errorMessage = "비밀번호는 4~8자리 숫자/영문만 사용할 수 있습니다.";
+    await serverLog({
+      event: "registration.domestic.failure",
+      category: "REGISTRATION",
+      status: "FAILURE",
+      registrationType: "DOMESTIC",
+      applicantName: name,
+      contact: phone,
       errorMessage,
       statusCode: 400,
       ipAddress,
@@ -170,17 +301,24 @@ app.post("/api/register/domestic", async (req, res) => {
     const passwordHash = await hashPassword(password);
     const result = await pool.query(
       `INSERT INTO registrations (
-        type, name, title, affiliation, contact, privacy_consent, password_hash, payment_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,'NOT_REQUIRED')
+        type, name, title, affiliation, contact, email, privacy_consent, password_hash,
+        affiliation_type, affiliation_type_other, attendance_dates, teacher_document_needed,
+        payment_status
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'NOT_REQUIRED')
       RETURNING *`,
       [
         "DOMESTIC",
         name,
         title,
         affiliation,
-        contact,
-        Boolean(privacyConsent),
+        phone,
+        email,
+        true,
         passwordHash,
+        affiliationType,
+        affiliationType === "OTHER" ? affiliationTypeOther : null,
+        attendanceDates,
+        Boolean(teacherDocumentNeeded),
       ],
     );
     const registration = result.rows[0];
@@ -228,41 +366,58 @@ app.post("/api/register/foreigner", async (req, res) => {
     category: "REGISTRATION",
     status: "ATTEMPT",
     registrationType: "FOREIGNER",
-    applicantName: body.name,
-    contact: body.contact,
+    applicantName: body.givenName && body.familyName
+      ? `${body.givenName} ${body.familyName}`
+      : body.name,
+    contact: body.phone || body.email || body.contact,
     ipAddress,
     userAgent,
     metadata: { payload: sanitizePayload(body) },
   });
 
   const {
-    name,
-    title,
-    affiliation,
-    contact,
+    givenName,
+    familyName,
+    preferredName,
+    email,
+    phone,
+    whatsappId,
+    attendanceDates,
+    visaSupportNeeded,
+    passportNumber,
+    arrivalDatetime,
+    departureDatetime,
+    arrivalFlightNumber,
+    departureFlightNumber,
+    transportationOptions,
+    accommodationType,
+    checkInDate,
+    checkOutDate,
+    dietaryPreference,
+    dietaryDetails,
     privacyConsent,
     password,
-    nationality,
-    passportNumber,
-    arrivalDate,
-    departureDate,
-    dietary,
-    accommodation,
-    accommodationDays,
-    vehicleUsage,
-    specialRequests,
   } = body;
 
+  const fullName =
+    givenName && familyName ? `${String(givenName).trim()} ${String(familyName).trim()}` : "";
+
   if (
-    !name ||
-    !title ||
-    !affiliation ||
-    !contact ||
+    !givenName ||
+    !familyName ||
+    !email ||
+    !phone ||
+    !whatsappId ||
     !password ||
-    !nationality ||
-    !passportNumber ||
-    !arrivalDate ||
-    !departureDate
+    !Array.isArray(attendanceDates) ||
+    !attendanceDates.length ||
+    !arrivalDatetime ||
+    !departureDatetime ||
+    !arrivalFlightNumber ||
+    !departureFlightNumber ||
+    !Array.isArray(transportationOptions) ||
+    !transportationOptions.length ||
+    !dietaryPreference
   ) {
     const errorMessage = "Please fill in all required fields.";
     await serverLog({
@@ -270,8 +425,8 @@ app.post("/api/register/foreigner", async (req, res) => {
       category: "REGISTRATION",
       status: "FAILURE",
       registrationType: "FOREIGNER",
-      applicantName: name,
-      contact,
+      applicantName: fullName,
+      contact: phone || email,
       errorMessage,
       statusCode: 400,
       ipAddress,
@@ -281,50 +436,118 @@ app.post("/api/register/foreigner", async (req, res) => {
     return res.status(400).json({ error: errorMessage });
   }
 
-  if (accommodation && !accommodationDays) {
-    const errorMessage = "Please enter the number of accommodation nights.";
-    await serverLog({
-      event: "registration.foreigner.failure",
-      category: "REGISTRATION",
-      status: "FAILURE",
-      registrationType: "FOREIGNER",
-      applicantName: name,
-      contact,
-      errorMessage,
-      statusCode: 400,
-      ipAddress,
-      userAgent,
-    });
+  if (!privacyConsent) {
+    const errorMessage =
+      "You must agree to the collection and use of personal information.";
     return res.status(400).json({ error: errorMessage });
+  }
+
+  if (!email.includes("@")) {
+    return res.status(400).json({ error: "Please enter a valid email address." });
+  }
+
+  if (!isValidInternationalPhone(phone) || !isValidInternationalPhone(whatsappId)) {
+    return res
+      .status(400)
+      .json({ error: "Please enter a valid phone number with country code." });
+  }
+
+  const validAttendance = attendanceDates.every((date) =>
+    FOREIGNER_ATTENDANCE_DATES.has(date),
+  );
+  if (!validAttendance) {
+    return res.status(400).json({ error: "Please select valid participation dates." });
+  }
+
+  if (!DIETARY_PREFERENCES.has(dietaryPreference)) {
+    return res.status(400).json({ error: "Please select a valid dietary preference." });
+  }
+
+  if (
+    (dietaryPreference === "VEGETARIAN" || dietaryPreference === "OTHER") &&
+    !dietaryDetails
+  ) {
+    return res.status(400).json({ error: "Please provide dietary preference details." });
+  }
+
+  const validTransport = transportationOptions.every((option) =>
+    TRANSPORTATION_OPTIONS.has(option),
+  );
+  if (!validTransport) {
+    return res
+      .status(400)
+      .json({ error: "Please select valid transportation options." });
+  }
+
+  if (Boolean(visaSupportNeeded) && !passportNumber) {
+    return res
+      .status(400)
+      .json({ error: "Please enter your passport number for visa support." });
+  }
+
+  if (accommodationType && !ACCOMMODATION_TYPES.has(accommodationType)) {
+    return res.status(400).json({ error: "Please select a valid accommodation option." });
+  }
+
+  if (accommodationType === "ORGANIZER" && (!checkInDate || !checkOutDate)) {
+    return res
+      .status(400)
+      .json({ error: "Please enter check-in and check-out dates." });
+  }
+
+  if (
+    accommodationType === "ORGANIZER" &&
+    checkInDate &&
+    checkOutDate &&
+    checkOutDate <= checkInDate
+  ) {
+    return res
+      .status(400)
+      .json({ error: "Check-out date must be after check-in date." });
+  }
+
+  if (!isValidPassword(password)) {
+    return res
+      .status(400)
+      .json({ error: "Password must be 4–8 characters using letters and numbers only." });
   }
 
   try {
     const passwordHash = await hashPassword(password);
     const result = await pool.query(
       `INSERT INTO registrations (
-        type, name, title, affiliation, contact, privacy_consent, password_hash,
-        nationality, passport_number, arrival_date, departure_date, dietary,
-        accommodation, accommodation_days, vehicle_usage, special_requests,
+        type, name, title, affiliation, contact, email, privacy_consent, password_hash,
+        given_name, family_name, preferred_name, whatsapp_id, attendance_dates,
+        visa_support_needed, passport_number, arrival_datetime, departure_datetime,
+        arrival_flight_number, departure_flight_number, transportation_options,
+        accommodation_type, check_in_date, check_out_date, dietary_preference, dietary_details,
         payment_status, amount, currency
       ) VALUES (
-        'FOREIGNER',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'PENDING',$16,$17
+        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'PENDING',$23,$24
       ) RETURNING *`,
       [
-        name,
-        title,
-        affiliation,
-        contact,
-        Boolean(privacyConsent),
+        fullName,
+        phone,
+        email,
+        true,
         passwordHash,
-        nationality,
-        passportNumber,
-        arrivalDate,
-        departureDate,
-        dietary || null,
-        Boolean(accommodation),
-        accommodation ? Number(accommodationDays) : null,
-        Boolean(vehicleUsage),
-        specialRequests || null,
+        givenName,
+        familyName,
+        preferredName || null,
+        whatsappId,
+        attendanceDates,
+        Boolean(visaSupportNeeded),
+        passportNumber || null,
+        arrivalDatetime,
+        departureDatetime,
+        arrivalFlightNumber,
+        departureFlightNumber,
+        transportationOptions,
+        accommodationType || null,
+        accommodationType === "ORGANIZER" ? checkInDate : null,
+        accommodationType === "ORGANIZER" ? checkOutDate : null,
+        dietaryPreference,
+        dietaryDetails || null,
         REGISTRATION_FEE.amount,
         REGISTRATION_FEE.currency,
       ],
@@ -355,8 +578,8 @@ app.post("/api/register/foreigner", async (req, res) => {
       category: "REGISTRATION",
       status: "FAILURE",
       registrationType: "FOREIGNER",
-      applicantName: name,
-      contact,
+      applicantName: fullName,
+      contact: phone || email,
       errorMessage: error.message,
       statusCode: 500,
       ipAddress,
@@ -685,54 +908,115 @@ app.put("/api/mypage/me", async (req, res) => {
     const fields = {
       title: body.title ?? registration.title,
       affiliation: body.affiliation ?? registration.affiliation,
-      contact: body.contact ?? registration.contact,
+      contact: body.contact ?? body.phone ?? registration.contact,
+      email: body.email ?? registration.email,
       privacy_consent: body.privacyConsent ?? registration.privacy_consent,
+      affiliation_type: body.affiliationType ?? registration.affiliation_type,
+      affiliation_type_other:
+        body.affiliationType === "OTHER"
+          ? body.affiliationTypeOther
+          : body.affiliationType
+            ? null
+            : registration.affiliation_type_other,
+      attendance_dates: body.attendanceDates ?? registration.attendance_dates,
+      teacher_document_needed:
+        body.teacherDocumentNeeded ?? registration.teacher_document_needed,
     };
 
     if (registration.type === "FOREIGNER") {
+      const arrivalDatetime =
+        body.arrivalDatetime ||
+        (body.arrivalDate && body.arrivalTime
+          ? `${body.arrivalDate}T${body.arrivalTime}`
+          : registration.arrival_datetime);
+      const departureDatetime =
+        body.departureDatetime ||
+        (body.departureDate && body.departureTime
+          ? `${body.departureDate}T${body.departureTime}`
+          : registration.departure_datetime);
+
       Object.assign(fields, {
-        nationality: body.nationality ?? registration.nationality,
+        given_name: body.givenName ?? registration.given_name,
+        family_name: body.familyName ?? registration.family_name,
+        preferred_name: body.preferredName ?? registration.preferred_name,
+        whatsapp_id: body.whatsappId ?? registration.whatsapp_id,
+        attendance_dates: body.attendanceDates ?? registration.attendance_dates,
+        visa_support_needed:
+          body.visaSupportNeeded ?? registration.visa_support_needed,
         passport_number: body.passportNumber ?? registration.passport_number,
-        arrival_date: body.arrivalDate ?? registration.arrival_date,
-        departure_date: body.departureDate ?? registration.departure_date,
-        dietary: body.dietary ?? registration.dietary,
-        accommodation: body.accommodation ?? registration.accommodation,
-        accommodation_days: body.accommodation
-          ? body.accommodationDays
-          : null,
-        vehicle_usage: body.vehicleUsage ?? registration.vehicle_usage,
-        special_requests: body.specialRequests ?? registration.special_requests,
+        arrival_datetime: arrivalDatetime,
+        departure_datetime: departureDatetime,
+        arrival_flight_number:
+          body.arrivalFlightNumber ?? registration.arrival_flight_number,
+        departure_flight_number:
+          body.departureFlightNumber ?? registration.departure_flight_number,
+        transportation_options:
+          body.transportationOptions ?? registration.transportation_options,
+        accommodation_type: body.accommodationType ?? registration.accommodation_type,
+        check_in_date: body.checkInDate ?? registration.check_in_date,
+        check_out_date: body.checkOutDate ?? registration.check_out_date,
+        dietary_preference:
+          body.dietaryPreference ?? registration.dietary_preference,
+        dietary_details: body.dietaryDetails ?? registration.dietary_details,
       });
+
+      if (fields.given_name && fields.family_name) {
+        fields.name = `${fields.given_name} ${fields.family_name}`;
+      } else {
+        fields.name = registration.name;
+      }
     }
 
     let passwordHash = registration.password_hash;
-    if (body.password && String(body.password).length >= 4) {
+    if (body.password) {
+      if (!isValidPassword(body.password)) {
+        return res
+          .status(400)
+          .json({ error: "비밀번호는 4~8자리 숫자/영문만 사용할 수 있습니다." });
+      }
       passwordHash = await hashPassword(body.password);
     }
 
     const result = await pool.query(
       `UPDATE registrations SET
-        title = $1, affiliation = $2, contact = $3, privacy_consent = $4,
-        nationality = $5, passport_number = $6, arrival_date = $7, departure_date = $8,
-        dietary = $9, accommodation = $10, accommodation_days = $11,
-        vehicle_usage = $12, special_requests = $13, password_hash = $14,
+        name = $1, title = $2, affiliation = $3, contact = $4, email = $5, privacy_consent = $6,
+        affiliation_type = $7, affiliation_type_other = $8, attendance_dates = $9,
+        teacher_document_needed = $10,
+        given_name = $11, family_name = $12, preferred_name = $13, whatsapp_id = $14,
+        visa_support_needed = $15, passport_number = $16, arrival_datetime = $17, departure_datetime = $18,
+        arrival_flight_number = $19, departure_flight_number = $20, transportation_options = $21,
+        accommodation_type = $22, check_in_date = $23, check_out_date = $24,
+        dietary_preference = $25, dietary_details = $26, password_hash = $27,
         updated_at = NOW()
-      WHERE id = $15
+      WHERE id = $28
       RETURNING *`,
       [
-        fields.title,
-        fields.affiliation,
+        registration.type === "FOREIGNER" ? fields.name : registration.name,
+        registration.type === "DOMESTIC" ? fields.title : registration.title,
+        registration.type === "DOMESTIC" ? fields.affiliation : registration.affiliation,
         fields.contact,
+        fields.email,
         fields.privacy_consent,
-        registration.type === "FOREIGNER" ? fields.nationality : registration.nationality,
+        registration.type === "DOMESTIC" ? fields.affiliation_type : registration.affiliation_type,
+        registration.type === "DOMESTIC" ? fields.affiliation_type_other : registration.affiliation_type_other,
+        fields.attendance_dates ?? registration.attendance_dates,
+        registration.type === "DOMESTIC" ? fields.teacher_document_needed : registration.teacher_document_needed,
+        registration.type === "FOREIGNER" ? fields.given_name : registration.given_name,
+        registration.type === "FOREIGNER" ? fields.family_name : registration.family_name,
+        registration.type === "FOREIGNER" ? fields.preferred_name : registration.preferred_name,
+        registration.type === "FOREIGNER" ? fields.whatsapp_id : registration.whatsapp_id,
+        registration.type === "FOREIGNER" ? fields.visa_support_needed : registration.visa_support_needed,
         registration.type === "FOREIGNER" ? fields.passport_number : registration.passport_number,
-        registration.type === "FOREIGNER" ? fields.arrival_date : registration.arrival_date,
-        registration.type === "FOREIGNER" ? fields.departure_date : registration.departure_date,
-        registration.type === "FOREIGNER" ? fields.dietary : registration.dietary,
-        registration.type === "FOREIGNER" ? fields.accommodation : registration.accommodation,
-        registration.type === "FOREIGNER" ? fields.accommodation_days : registration.accommodation_days,
-        registration.type === "FOREIGNER" ? fields.vehicle_usage : registration.vehicle_usage,
-        registration.type === "FOREIGNER" ? fields.special_requests : registration.special_requests,
+        registration.type === "FOREIGNER" ? fields.arrival_datetime : registration.arrival_datetime,
+        registration.type === "FOREIGNER" ? fields.departure_datetime : registration.departure_datetime,
+        registration.type === "FOREIGNER" ? fields.arrival_flight_number : registration.arrival_flight_number,
+        registration.type === "FOREIGNER" ? fields.departure_flight_number : registration.departure_flight_number,
+        registration.type === "FOREIGNER" ? fields.transportation_options : registration.transportation_options,
+        registration.type === "FOREIGNER" ? fields.accommodation_type : registration.accommodation_type,
+        registration.type === "FOREIGNER" ? fields.check_in_date : registration.check_in_date,
+        registration.type === "FOREIGNER" ? fields.check_out_date : registration.check_out_date,
+        registration.type === "FOREIGNER" ? fields.dietary_preference : registration.dietary_preference,
+        registration.type === "FOREIGNER" ? fields.dietary_details : registration.dietary_details,
         passwordHash,
         sessionId,
       ],

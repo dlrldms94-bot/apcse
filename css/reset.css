@@ -24,7 +24,8 @@ footer, header, hgroup, menu, nav, section {
   display: block;
 }
 
-article, section, aside, figure, figcaption, footer, nav, header, div, ul, li, ol, a {
+article, section, aside, figure, figcaption, footer, nav, header, div, ul, li, ol, a,
+input, textarea, select, button {
   box-sizing: border-box;
 }
 

@@ -3,37 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>APCSE 사전등록</title>
+  <title>APCSE 2026 사전등록</title>
   <link rel="stylesheet" href="css/reset.css">
-  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
 </head>
-<body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a href="index.html" class="logo">APCSE 사전등록</a>
-      <nav class="site-nav">
-        <a href="index.html">사전등록</a>
-        <a href="mypage.html">마이페이지</a>
-      </nav>
-    </div>
+<body class="home-page">
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE 사전등록</a>
+    <a href="mypage.html" class="home-mypage-btn">마이페이지</a>
   </header>
 
-  <main class="page">
-    <h1 class="page-title">사전등록</h1>
-    <p class="page-desc">참가 유형을 선택해 주세요.</p>
+  <main class="home-main">
+    <h1 class="home-title">사전등록</h1>
+    <p class="home-desc">참가 유형을 선택해 주세요.</p>
 
-    <div class="card">
-      <div class="choice-grid">
-        <a href="register-domestic.html" class="choice-btn primary">
+    <div class="home-choice-panel">
+      <div class="home-choice-grid">
+        <a href="register-domestic.html" class="home-choice primary">
           내국인 사전등록
           <small>Domestic Pre-registration</small>
         </a>
-        <a href="register-foreigner.html" class="choice-btn secondary">
+        <a href="register-foreigner.html" class="home-choice secondary">
           외국인 사전등록
           <small>Foreigner Pre-registration</small>
         </a>
       </div>
     </div>
   </main>
+
+  <footer class="home-footer">
+    <!-- 발주처 메인 사이트 URL로 href 변경 -->
+    <a href="#" class="home-return">
+      <span class="home-return-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3.5L4 10.5V20C4 20.5523 4.44772 21 5 21H10V15H14V21H19C19.5523 21 20 20.5523 20 20V10.5L12 3.5Z" fill="white"/>
+        </svg>
+      </span>
+      <span>메인으로 돌아가기</span>
+    </a>
+  </footer>
 </body>
 </html>

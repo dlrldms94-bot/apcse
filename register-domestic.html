@@ -6,56 +6,151 @@
   <title>내국인 사전등록 | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a href="index.html" class="logo">APCSE 사전등록</a>
-      <nav class="site-nav">
-        <a href="index.html">사전등록</a>
-        <a href="mypage.html">마이페이지</a>
-      </nav>
-    </div>
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE 사전등록</a>
+    <a href="mypage.html" class="home-mypage-btn">마이페이지</a>
   </header>
 
   <main class="page">
     <h1 class="page-title">내국인 사전등록</h1>
-    <p class="page-desc">아래 정보를 입력하고 신청해 주세요.</p>
+    <p class="page-desc">아래 안내를 확인하신 후 정보를 입력하고 신청해 주세요.</p>
+
+    <div class="notice-box" style="margin-bottom: 24px;">
+      <p class="notice-title">행사 일정 안내</p>
+      <p>본 컨퍼런스는 10월 14일(수)부터 16일(금)까지 개최되나, 첫째 날(14일)은 해외 참가자 대상의 프로그램으로 운영됩니다. 국내 참가자분들을 위한 메인 컨퍼런스, 패널 토론 및 AI 교육 워크숍은 10월 15일(목) ~ 16일(금) 양일간 진행되오니 일정에 참고해 주시기 바랍니다.</p>
+      <p>※ 세부 프로그램(AI 교육 워크숍 등 인원 제한 세션)에 대한 선착순 참여 신청 및 수요조사는 9월 중 사전등록자 분들을 대상으로 별도 안내(이메일/문자)될 예정입니다.</p>
+    </div>
 
     <div class="card">
       <form id="registerForm" class="form-grid">
         <div class="field">
-          <label>이름 <span class="req">*</span></label>
+          <label>1. 개인정보 수집·이용 동의 <span class="req">*</span></label>
+          <div class="privacy-details">
+            <p>주식회사 온앤미(이하 "주최자")는 APCSE 사전등록 및 행사 운영을 위해 아래와 같이 개인정보를 수집·이용합니다.</p>
+            <ul>
+              <li><strong>수집 항목:</strong> 이름, 소속 기관명, 소속 유형, 직함/직책, 휴대폰 번호, 이메일 주소, 참석 희망일, 교사 출장 증빙 공문 필요 여부, 마이페이지 비밀번호</li>
+              <li><strong>수집 목적:</strong> 사전등록 접수, 참가 안내, 세부 프로그램 수요조사, 출장 증빙 공문 발송, 등록 정보 확인·수정</li>
+              <li><strong>보유 기간:</strong> 행사 종료 후 1년 이내 파기 (관련 법령에 따른 보관 의무가 있는 경우 해당 기간 준수)</li>
+              <li><strong>거부 권리:</strong> 동의를 거부하실 수 있으나, 거부 시 사전등록 및 행사 안내가 불가능합니다.</li>
+            </ul>
+          </div>
+          <div class="radio-group" style="margin-top: 12px;">
+            <label class="radio-row">
+              <input type="radio" name="privacyConsent" value="yes" required>
+              동의합니다.
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="privacyConsent" value="no">
+              동의하지 않습니다.
+            </label>
+          </div>
+          <p class="hint">※ 동의하지 않으실 경우 사전등록 진행이 불가능하며, 행사 안내를 받으실 수 없습니다.</p>
+        </div>
+
+        <div class="field">
+          <label>2. 이름 <span class="req">*</span></label>
           <input type="text" name="name" required>
         </div>
+
         <div class="field">
-          <label>직함 / 직책 <span class="req">*</span></label>
-          <input type="text" name="title" required>
+          <label>3. 소속 기관명 <span class="req">*</span></label>
+          <input type="text" name="affiliation" placeholder="예: OO대학교, OO초등학교, OO연구소" required>
         </div>
+
         <div class="field">
-          <label>소속 <span class="req">*</span></label>
-          <input type="text" name="affiliation" required>
+          <label>4. 소속 유형 분류 <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="TEACHER_K12" required>
+              초·중·고 교사
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="PROFESSOR">
+              대학교수 및 강사
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="STUDENT">
+              대학(원)생
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="GOVERNMENT">
+              정부 및 공공기관 연구원/임직원
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="IT_EDU_CORP">
+              일반 IT/교육 기업 관계자
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="affiliationType" value="OTHER" id="affiliationTypeOtherRadio">
+              기타 (직접 입력)
+            </label>
+          </div>
+          <input type="text" name="affiliationTypeOther" id="affiliationTypeOther" class="inline-input" placeholder="기타 소속 유형을 입력해 주세요." hidden>
         </div>
+
         <div class="field">
-          <label>연락처 <span class="req">*</span></label>
-          <input type="text" name="contact" required>
+          <label>5. 직함 / 직책 <span class="req">*</span></label>
+          <input type="text" name="title" placeholder="예: 교사, 교수, 연구원, 주임, 학생 등" required>
         </div>
+
         <div class="field">
-          <label>개인정보 수집·이용 동의</label>
-          <label class="checkbox-row">
-            <input type="checkbox" name="privacyConsent">
-            개인정보 수집·이용에 동의합니다. (선택)
-          </label>
+          <label>6. 휴대폰 번호 <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="010-0000-0000" pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}" required>
+          <p class="hint">하이픈(-)을 포함하여 입력해 주세요.</p>
         </div>
+
         <div class="field">
-          <label>마이페이지 확인용 비밀번호 <span class="req">*</span></label>
-          <input type="password" name="password" minlength="4" required>
-          <p class="hint">마이페이지에서 정보를 확인·수정할 때 사용합니다.</p>
+          <label>7. 이메일 주소 <span class="req">*</span></label>
+          <div class="email-row">
+            <input type="text" name="emailLocal" id="emailLocal" placeholder="example" required autocomplete="off">
+            <span class="at">@</span>
+            <input type="text" name="emailDomain" id="emailDomain" placeholder="email.com" required autocomplete="off">
+          </div>
+          <p class="hint">※ 추후 세부 프로그램 수요조사 링크가 이메일로 발송되오니 정확히 입력해 주세요.</p>
         </div>
+
+        <div class="field">
+          <label>8. 참석 희망일 선택 <span class="req">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="2026-10-15">
+              10월 15일(목) - 메인 세션, 패널 토론, 세부 발표 및 워크숍
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="2026-10-16">
+              10월 16일(금) - 메인 세션, 패널 토론, 세부 발표 및 워크숍
+            </label>
+          </div>
+          <p class="hint">※ 10월 14일(수)은 해외 초청 연사 및 외국인 참가자 대상 프로그램(학교 방문 등)으로, 내국인 신청은 제한됩니다.</p>
+        </div>
+
+        <div class="field">
+          <label>9. 교사 출장 증빙 협조 공문 필요 여부</label>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="teacherDocumentNeeded" value="yes">
+              필요함 (등록하신 이메일로 행사 전 일괄 발송됩니다.)
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="teacherDocumentNeeded" value="no" checked>
+              필요 없음
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>10. 마이페이지 확인용 비밀번호 <span class="req">*</span></label>
+          <input type="password" name="password" minlength="4" maxlength="8" pattern="[A-Za-z0-9]{4,8}" required>
+          <p class="hint">등록 확인 및 수정을 위한 4~8자리 숫자/영문</p>
+        </div>
+
         <div class="field">
           <label>비밀번호 확인 <span class="req">*</span></label>
-          <input type="password" name="passwordConfirm" minlength="4" required>
+          <input type="password" name="passwordConfirm" minlength="4" maxlength="8" pattern="[A-Za-z0-9]{4,8}" required>
         </div>
 
         <div id="errorBox" class="alert error" hidden></div>
@@ -72,14 +167,78 @@
     const form = document.getElementById("registerForm");
     const errorBox = document.getElementById("errorBox");
     const submitBtn = document.getElementById("submitBtn");
+    const affiliationTypeOther = document.getElementById("affiliationTypeOther");
+    const affiliationTypeOtherRadio = document.getElementById("affiliationTypeOtherRadio");
+
+    form.querySelectorAll('input[name="affiliationType"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        const isOther = affiliationTypeOtherRadio.checked;
+        affiliationTypeOther.hidden = !isOther;
+        affiliationTypeOther.required = isOther;
+        if (!isOther) affiliationTypeOther.value = "";
+      });
+    });
+
+    function getEmail() {
+      const local = document.getElementById("emailLocal").value.trim();
+      const domain = document.getElementById("emailDomain").value.trim();
+      if (!local || !domain) return "";
+      return `${local}@${domain}`;
+    }
+
+    function getAttendanceDates() {
+      return [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
+        (el) => el.value,
+      );
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorBox.hidden = true;
 
       const data = Object.fromEntries(new FormData(form));
+      const privacyConsent = data.privacyConsent === "yes";
+      const attendanceDates = getAttendanceDates();
+      const email = getEmail();
+
+      if (!privacyConsent) {
+        errorBox.textContent = "개인정보 수집·이용에 동의해야 사전등록이 가능합니다.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (data.affiliationType === "OTHER" && !data.affiliationTypeOther?.trim()) {
+        errorBox.textContent = "기타 소속 유형을 입력해 주세요.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!attendanceDates.length) {
+        errorBox.textContent = "참석 희망일을 1개 이상 선택해 주세요.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!email.includes("@") || email.split("@").some((part) => !part)) {
+        errorBox.textContent = "이메일 주소를 정확히 입력해 주세요.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!/^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(data.phone)) {
+        errorBox.textContent = "휴대폰 번호는 하이픈(-)을 포함하여 입력해 주세요. (예: 010-0000-0000)";
+        errorBox.hidden = false;
+        return;
+      }
+
       if (data.password !== data.passwordConfirm) {
         errorBox.textContent = "비밀번호가 일치하지 않습니다.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!/^[A-Za-z0-9]{4,8}$/.test(data.password)) {
+        errorBox.textContent = "비밀번호는 4~8자리 숫자/영문만 사용할 수 있습니다.";
         errorBox.hidden = false;
         return;
       }
@@ -92,11 +251,16 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: data.name,
-            title: data.title,
-            affiliation: data.affiliation,
-            contact: data.contact,
-            privacyConsent: Boolean(data.privacyConsent),
+            name: data.name.trim(),
+            affiliation: data.affiliation.trim(),
+            affiliationType: data.affiliationType,
+            affiliationTypeOther: data.affiliationType === "OTHER" ? data.affiliationTypeOther.trim() : null,
+            title: data.title.trim(),
+            phone: data.phone.trim(),
+            email,
+            attendanceDates,
+            teacherDocumentNeeded: data.teacherDocumentNeeded === "yes",
+            privacyConsent: true,
             password: data.password,
           }),
         });

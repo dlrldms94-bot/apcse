@@ -6,96 +6,235 @@
   <title>Foreigner Pre-registration | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a href="index.html" class="logo">APCSE Pre-registration</a>
-      <nav class="site-nav">
-        <a href="index.html">Registration</a>
-        <a href="mypage.html">My Page</a>
-      </nav>
-    </div>
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE 사전등록</a>
+    <a href="mypage.html" class="home-mypage-btn">마이페이지</a>
   </header>
 
   <main class="page">
     <h1 class="page-title">Foreigner Pre-registration</h1>
-    <p class="page-desc">Please fill in the information below and apply.</p>
+
+    <div class="notice-box" style="margin-bottom: 24px;">
+      <p>Welcome to APCSE 2026. Please fill out the form below to complete your pre-registration.</p>
+      <p>※ Please note that detailed session bookings for limited-seat programs (such as AI education workshops) will be opened through a separate announcement with an application link sent to registered participants in September.</p>
+    </div>
 
     <div class="card">
       <form id="registerForm" class="form-grid">
         <div class="field">
-          <label>Name (as on passport) <span class="req">*</span></label>
-          <input type="text" name="name" required>
+          <label>Personal Information Collection &amp; Use Consent <span class="req">*</span></label>
+          <div class="privacy-details">
+            <p>On&amp;Me Co., Ltd. (the "Organizer") collects and uses personal information as follows for APCSE pre-registration and event operations.</p>
+            <ul>
+              <li><strong>Items collected:</strong> Name, contact information, participation dates, visa support details, flight information, transportation/accommodation requests, dietary preferences, and My Page password</li>
+              <li><strong>Purpose:</strong> Pre-registration, event guidance, visa support, logistics coordination, and registration management</li>
+              <li><strong>Retention period:</strong> Destroyed within 1 year after the event ends (unless otherwise required by law)</li>
+              <li><strong>Right to refuse:</strong> You may refuse consent, but pre-registration and event guidance will not be available.</li>
+            </ul>
+          </div>
+          <div class="radio-group" style="margin-top: 12px;">
+            <label class="radio-row">
+              <input type="radio" name="privacyConsent" value="yes" required>
+              I agree.
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="privacyConsent" value="no">
+              I do not agree.
+            </label>
+          </div>
+          <p class="hint">※ If you do not agree, pre-registration cannot be completed.</p>
         </div>
-        <div class="field">
-          <label>Title / Position <span class="req">*</span></label>
-          <input type="text" name="title" required>
-        </div>
-        <div class="field">
-          <label>Affiliation <span class="req">*</span></label>
-          <input type="text" name="affiliation" required>
-        </div>
-        <div class="field">
-          <label>Contact Information <span class="req">*</span></label>
-          <input type="text" name="contact" required>
-        </div>
+
         <div class="form-row-2">
           <div class="field">
-            <label>Nationality <span class="req">*</span></label>
-            <input type="text" name="nationality" required>
+            <label>Given Name (First Name) <span class="req">*</span></label>
+            <input type="text" name="givenName" required autocomplete="given-name">
           </div>
           <div class="field">
-            <label>Passport Number <span class="req">*</span></label>
-            <input type="text" name="passportNumber" required>
+            <label>Family Name (Last Name) <span class="req">*</span></label>
+            <input type="text" name="familyName" required autocomplete="family-name">
           </div>
         </div>
-        <div class="form-row-2">
-          <div class="field">
-            <label>Arrival Date <span class="req">*</span></label>
+
+        <div class="field">
+          <label>Preferred Name on Badge (Optional)</label>
+          <input type="text" name="preferredName" placeholder="Name to be printed on your badge">
+        </div>
+
+        <div class="field">
+          <label>E-mail Address <span class="req">*</span></label>
+          <input type="email" name="email" required autocomplete="email">
+          <p class="hint">※ Session booking links and event updates will be sent to this address.</p>
+        </div>
+
+        <div class="field">
+          <label>Mobile Phone Number <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="+82 10-1234-5678" required>
+          <p class="hint">Please include your country code (e.g., +1, +44, +82).</p>
+        </div>
+
+        <div class="field">
+          <label>WhatsApp ID (or Mobile Number linked to WhatsApp) <span class="req">*</span></label>
+          <input type="text" name="whatsappId" placeholder="+82 10-1234-5678 or WhatsApp ID" required>
+        </div>
+
+        <div class="field">
+          <label>Participation Date <span class="req">*</span> (Select all that apply)</label>
+          <div class="checkbox-group">
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="2026-10-14">
+              October 14 (Wed) - Pre-conference Program (School Visit &amp; Cultural Experience)
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="2026-10-15">
+              October 15 (Thu) - Main Sessions, Panel Discussions, Workshops
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="2026-10-16">
+              October 16 (Fri) - Main Sessions, Panel Discussions, Workshops
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Do you require an Official Visa Support Letter from the organizer? <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="visaSupportNeeded" value="yes" required>
+              Yes
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="visaSupportNeeded" value="no">
+              No
+            </label>
+          </div>
+          <div id="visaBlock" class="conditional-block" hidden>
+            <div class="field" style="margin-bottom: 0;">
+              <label>Passport Number <span class="req">*</span></label>
+              <input type="text" name="passportNumber" id="passportNumber">
+            </div>
+            <p class="alert-note">If YES, please email a scanned copy of your passport to the Secretariat (<a href="mailto:syjang@kosac.re.kr">syjang@kosac.re.kr</a>) immediately.</p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Arrival Date &amp; Time at Incheon Airport (KST) <span class="req">*</span></label>
+          <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
+          <div class="datetime-row">
             <input type="date" name="arrivalDate" required>
-          </div>
-          <div class="field">
-            <label>Departure Date <span class="req">*</span></label>
-            <input type="date" name="departureDate" required>
+            <input type="time" name="arrivalTime" required>
           </div>
         </div>
+
         <div class="field">
-          <label>Dietary Preferences</label>
-          <textarea name="dietary" placeholder="Vegan, Halal, allergies, additional requests, etc."></textarea>
+          <label>Arrival Flight Number <span class="req">*</span></label>
+          <input type="text" name="arrivalFlightNumber" placeholder="e.g., KE123" required>
         </div>
+
+        <div class="field">
+          <label>Departure Date &amp; Time from Incheon Airport (KST) <span class="req">*</span></label>
+          <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
+          <div class="datetime-row">
+            <input type="date" name="departureDate" required>
+            <input type="time" name="departureTime" required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Departure Flight Number <span class="req">*</span></label>
+          <input type="text" name="departureFlightNumber" placeholder="e.g., OZ456" required>
+        </div>
+
+        <div class="field">
+          <label>Vehicle &amp; Shuttle Support <span class="req">*</span> (Select all that apply)</label>
+          <div class="checkbox-group" id="transportationGroup">
+            <label class="checkbox-row">
+              <input type="checkbox" name="transportationOptions" value="PICKUP">
+              I request a Private Airport Pick-up service upon my arrival.
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="transportationOptions" value="DROPOFF">
+              I request a Private Airport Drop-off service upon my departure.
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="transportationOptions" value="NONE" id="transportNone">
+              No transportation support needed.
+            </label>
+          </div>
+        </div>
+
         <div class="field">
           <label>Accommodation</label>
-          <label class="checkbox-row">
-            <input type="checkbox" name="accommodation" id="accommodation">
-            I will use accommodation
-          </label>
-          <input type="number" name="accommodationDays" id="accommodationDays" min="1" placeholder="Number of nights" hidden>
+          <div class="checkbox-group">
+            <label class="checkbox-row">
+              <input type="checkbox" name="accommodationOrganizer" id="accommodationOrganizer">
+              I request the organizer to book a room at the official/recommended hotel (At Your Own Expense).
+            </label>
+            <p class="hint">※ Please note: All room charges and incidental expenses must be paid individually by the participant upon check-out. A cancellation fee may apply in accordance with the hotel's policy if you change or cancel your booking at a later date.</p>
+            <div id="accommodationDates" class="conditional-block" hidden>
+              <div class="form-row-2">
+                <div class="field" style="margin-bottom: 0;">
+                  <label>Check-in Date <span class="req">*</span></label>
+                  <input type="date" name="checkInDate" id="checkInDate">
+                </div>
+                <div class="field" style="margin-bottom: 0;">
+                  <label>Check-out Date <span class="req">*</span></label>
+                  <input type="date" name="checkOutDate" id="checkOutDate">
+                </div>
+              </div>
+            </div>
+            <label class="checkbox-row">
+              <input type="checkbox" name="accommodationOwn" id="accommodationOwn">
+              I will arrange my own accommodation independently.
+            </label>
+          </div>
         </div>
+
         <div class="field">
-          <label class="checkbox-row">
-            <input type="checkbox" name="vehicleUsage">
-            I need vehicle/transportation support
-          </label>
+          <label>Dietary Preferences <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="NO_RESTRICTION" required>
+              No Restriction
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="VEGETARIAN">
+              Vegetarian
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="HALAL">
+              Halal
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="NO_PORK">
+              No Pork
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="NO_BEEF">
+              No Beef
+            </label>
+            <label class="radio-row">
+              <input type="radio" name="dietaryPreference" value="OTHER" id="dietaryOtherRadio">
+              Others &amp; Severe Allergies
+            </label>
+          </div>
+          <input type="text" name="dietaryDetails" id="dietaryDetails" class="inline-input" placeholder="Please provide details" hidden>
         </div>
-        <div class="field">
-          <label>Special Requests</label>
-          <textarea name="specialRequests" placeholder="Disability support: seating, transport, wheelchair preparation, etc."></textarea>
-        </div>
-        <div class="field">
-          <label class="checkbox-row">
-            <input type="checkbox" name="privacyConsent">
-            I agree to the collection and use of personal information. (Optional)
-          </label>
-        </div>
+
         <div class="field">
           <label>My Page Password <span class="req">*</span></label>
-          <input type="password" name="password" minlength="4" required>
+          <input type="password" name="password" minlength="4" maxlength="8" pattern="[A-Za-z0-9]{4,8}" required>
+          <p class="hint">4–8 characters using letters and numbers only.</p>
         </div>
+
         <div class="field">
           <label>Confirm Password <span class="req">*</span></label>
-          <input type="password" name="passwordConfirm" minlength="4" required>
+          <input type="password" name="passwordConfirm" minlength="4" maxlength="8" pattern="[A-Za-z0-9]{4,8}" required>
+          <p class="hint">For My Page login, use your full name as: <strong>Given Name + Family Name</strong> (e.g., John Smith).</p>
         </div>
 
         <div id="errorBox" class="alert error" hidden></div>
@@ -112,24 +251,163 @@
     const form = document.getElementById("registerForm");
     const errorBox = document.getElementById("errorBox");
     const submitBtn = document.getElementById("submitBtn");
-    const accommodation = document.getElementById("accommodation");
-    const accommodationDays = document.getElementById("accommodationDays");
+    const visaBlock = document.getElementById("visaBlock");
+    const passportNumber = document.getElementById("passportNumber");
+    const accommodationOrganizer = document.getElementById("accommodationOrganizer");
+    const accommodationOwn = document.getElementById("accommodationOwn");
+    const accommodationDates = document.getElementById("accommodationDates");
+    const checkInDate = document.getElementById("checkInDate");
+    const checkOutDate = document.getElementById("checkOutDate");
+    const dietaryDetails = document.getElementById("dietaryDetails");
+    const dietaryOtherRadio = document.getElementById("dietaryOtherRadio");
+    const transportNone = document.getElementById("transportNone");
 
-    accommodation.addEventListener("change", () => {
-      accommodationDays.hidden = !accommodation.checked;
-      accommodationDays.required = accommodation.checked;
+    form.querySelectorAll('input[name="visaSupportNeeded"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        const needsVisa = radio.value === "yes" && radio.checked;
+        visaBlock.hidden = !needsVisa;
+        passportNumber.required = needsVisa;
+        if (!needsVisa) passportNumber.value = "";
+      });
     });
+
+    accommodationOrganizer.addEventListener("change", () => {
+      if (accommodationOrganizer.checked) {
+        accommodationOwn.checked = false;
+        accommodationDates.hidden = false;
+        checkInDate.required = true;
+        checkOutDate.required = true;
+      } else {
+        accommodationDates.hidden = true;
+        checkInDate.required = false;
+        checkOutDate.required = false;
+        checkInDate.value = "";
+        checkOutDate.value = "";
+      }
+    });
+
+    accommodationOwn.addEventListener("change", () => {
+      if (accommodationOwn.checked) {
+        accommodationOrganizer.checked = false;
+        accommodationDates.hidden = true;
+        checkInDate.required = false;
+        checkOutDate.required = false;
+        checkInDate.value = "";
+        checkOutDate.value = "";
+      }
+    });
+
+    form.querySelectorAll('input[name="dietaryPreference"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        const needsDetails =
+          (radio.value === "VEGETARIAN" || radio.value === "OTHER") && radio.checked;
+        dietaryDetails.hidden = !needsDetails;
+        dietaryDetails.required = needsDetails;
+        if (!needsDetails) dietaryDetails.value = "";
+      });
+    });
+
+    transportNone.addEventListener("change", () => {
+      if (transportNone.checked) {
+        form.querySelectorAll('input[name="transportationOptions"]').forEach((el) => {
+          if (el.value !== "NONE") el.checked = false;
+        });
+      }
+    });
+
+    form.querySelectorAll('input[name="transportationOptions"]').forEach((el) => {
+      if (el.value !== "NONE") {
+        el.addEventListener("change", () => {
+          if (el.checked) transportNone.checked = false;
+        });
+      }
+    });
+
+    function getAttendanceDates() {
+      return [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
+        (el) => el.value,
+      );
+    }
+
+    function getTransportationOptions() {
+      return [...form.querySelectorAll('input[name="transportationOptions"]:checked')].map(
+        (el) => el.value,
+      );
+    }
+
+    function buildDatetime(date, time) {
+      return `${date}T${time}`;
+    }
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       errorBox.hidden = true;
 
       const data = Object.fromEntries(new FormData(form));
+      const attendanceDates = getAttendanceDates();
+      const transportationOptions = getTransportationOptions();
+      const visaSupportNeeded = data.visaSupportNeeded === "yes";
+      const needsDietaryDetails =
+        data.dietaryPreference === "VEGETARIAN" || data.dietaryPreference === "OTHER";
+
+      if (data.privacyConsent !== "yes") {
+        errorBox.textContent = "You must agree to the collection and use of personal information.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!attendanceDates.length) {
+        errorBox.textContent = "Please select at least one participation date.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!transportationOptions.length) {
+        errorBox.textContent = "Please select at least one transportation option.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (visaSupportNeeded && !data.passportNumber?.trim()) {
+        errorBox.textContent = "Please enter your passport number for visa support.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (needsDietaryDetails && !data.dietaryDetails?.trim()) {
+        errorBox.textContent = "Please provide dietary preference details.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (accommodationOrganizer.checked) {
+        if (!data.checkInDate || !data.checkOutDate) {
+          errorBox.textContent = "Please enter check-in and check-out dates.";
+          errorBox.hidden = false;
+          return;
+        }
+        if (data.checkOutDate <= data.checkInDate) {
+          errorBox.textContent = "Check-out date must be after check-in date.";
+          errorBox.hidden = false;
+          return;
+        }
+      }
+
       if (data.password !== data.passwordConfirm) {
         errorBox.textContent = "Passwords do not match.";
         errorBox.hidden = false;
         return;
       }
+
+      if (!/^[A-Za-z0-9]{4,8}$/.test(data.password)) {
+        errorBox.textContent = "Password must be 4–8 characters using letters and numbers only.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      let accommodationType = null;
+      if (accommodationOrganizer.checked) accommodationType = "ORGANIZER";
+      if (accommodationOwn.checked) accommodationType = "OWN";
 
       submitBtn.disabled = true;
       submitBtn.textContent = "Submitting...";
@@ -139,20 +417,26 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: data.name,
-            title: data.title,
-            affiliation: data.affiliation,
-            contact: data.contact,
-            nationality: data.nationality,
-            passportNumber: data.passportNumber,
-            arrivalDate: data.arrivalDate,
-            departureDate: data.departureDate,
-            dietary: data.dietary,
-            accommodation: Boolean(data.accommodation),
-            accommodationDays: data.accommodation ? Number(data.accommodationDays) : null,
-            vehicleUsage: Boolean(data.vehicleUsage),
-            specialRequests: data.specialRequests,
-            privacyConsent: Boolean(data.privacyConsent),
+            givenName: data.givenName.trim(),
+            familyName: data.familyName.trim(),
+            preferredName: data.preferredName?.trim() || null,
+            email: data.email.trim(),
+            phone: data.phone.trim(),
+            whatsappId: data.whatsappId.trim(),
+            attendanceDates,
+            visaSupportNeeded,
+            passportNumber: visaSupportNeeded ? data.passportNumber.trim() : null,
+            arrivalDatetime: buildDatetime(data.arrivalDate, data.arrivalTime),
+            departureDatetime: buildDatetime(data.departureDate, data.departureTime),
+            arrivalFlightNumber: data.arrivalFlightNumber.trim(),
+            departureFlightNumber: data.departureFlightNumber.trim(),
+            transportationOptions,
+            accommodationType,
+            checkInDate: accommodationOrganizer.checked ? data.checkInDate : null,
+            checkOutDate: accommodationOrganizer.checked ? data.checkOutDate : null,
+            dietaryPreference: data.dietaryPreference,
+            dietaryDetails: needsDietaryDetails ? data.dietaryDetails.trim() : null,
+            privacyConsent: true,
             password: data.password,
           }),
         });

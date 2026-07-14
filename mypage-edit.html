@@ -6,17 +6,13 @@
   <title>내 정보 수정 | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header-inner">
-      <a href="index.html" class="logo">APCSE 사전등록</a>
-      <nav class="site-nav">
-        <a href="index.html">사전등록</a>
-        <a href="mypage.html">마이페이지</a>
-      </nav>
-    </div>
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE 사전등록</a>
+    <a href="mypage.html" class="home-mypage-btn">마이페이지</a>
   </header>
 
   <main class="page">
@@ -33,6 +29,41 @@
   </main>
 
   <script>
+    const AFFILIATION_TYPE_LABELS = {
+      TEACHER_K12: "초·중·고 교사",
+      PROFESSOR: "대학교수 및 강사",
+      STUDENT: "대학(원)생",
+      GOVERNMENT: "정부 및 공공기관 연구원/임직원",
+      IT_EDU_CORP: "일반 IT/교육 기업 관계자",
+      OTHER: "기타",
+    };
+
+    const ATTENDANCE_OPTIONS_DOMESTIC = [
+      { value: "2026-10-15", label: "10월 15일(목)" },
+      { value: "2026-10-16", label: "10월 16일(금)" },
+    ];
+
+    const ATTENDANCE_OPTIONS_FOREIGNER = [
+      { value: "2026-10-14", label: "October 14 (Wed) - Pre-conference Program" },
+      { value: "2026-10-15", label: "October 15 (Thu) - Main Sessions" },
+      { value: "2026-10-16", label: "October 16 (Fri) - Main Sessions" },
+    ];
+
+    const DIETARY_LABELS = {
+      NO_RESTRICTION: "No Restriction",
+      VEGETARIAN: "Vegetarian",
+      HALAL: "Halal",
+      NO_PORK: "No Pork",
+      NO_BEEF: "No Beef",
+      OTHER: "Others & Severe Allergies",
+    };
+
+    function splitDatetime(datetime) {
+      if (!datetime || !datetime.includes("T")) return { date: "", time: "" };
+      const [date, time] = datetime.split("T");
+      return { date, time: time.slice(0, 5) };
+    }
+
     const form = document.getElementById("editForm");
     const statusBox = document.getElementById("statusBox");
     const errorBox = document.getElementById("errorBox");
@@ -45,13 +76,174 @@
       const required = options.required ? "required" : "";
       const disabled = options.disabled ? "disabled" : "";
       const hidden = options.hidden ? "hidden" : "";
+      const placeholder = options.placeholder ? `placeholder="${options.placeholder}"` : "";
       if (type === "textarea") {
         return `<div class="field" ${hidden}><label>${label}</label><textarea name="${name}" ${required}>${value || ""}</textarea></div>`;
       }
       if (type === "checkbox") {
         return `<div class="field" ${hidden}><label class="checkbox-row"><input type="checkbox" name="${name}" ${value ? "checked" : ""}> ${label}</label></div>`;
       }
-      return `<div class="field" ${hidden}><label>${label}</label><input type="${type}" name="${name}" value="${value || ""}" ${required} ${disabled}></div>`;
+      return `<div class="field" ${hidden}><label>${label}</label><input type="${type}" name="${name}" value="${value || ""}" ${required} ${disabled} ${placeholder}></div>`;
+    }
+
+    function renderDomesticFields(data) {
+      const selectedDates = data.attendanceDates || [];
+      const attendanceHtml = ATTENDANCE_OPTIONS_DOMESTIC.map((option) => {
+        const checked = selectedDates.includes(option.value) ? "checked" : "";
+        return `<label class="checkbox-row"><input type="checkbox" name="attendanceDates" value="${option.value}" ${checked}> ${option.label}</label>`;
+      }).join("");
+
+      const affiliationType = data.affiliationType || "";
+      const affiliationOptions = Object.entries(AFFILIATION_TYPE_LABELS).map(([value, label]) => {
+        const checked = affiliationType === value ? "checked" : "";
+        return `<label class="radio-row"><input type="radio" name="affiliationType" value="${value}" ${checked}> ${label}</label>`;
+      }).join("");
+
+      return `
+        ${field("소속 기관명", "affiliation", data.affiliation, { required: true })}
+        <div class="field">
+          <label>소속 유형</label>
+          <div class="radio-group">${affiliationOptions}</div>
+          <input type="text" name="affiliationTypeOther" value="${data.affiliationTypeOther || ""}" class="inline-input" placeholder="기타 소속 유형" ${affiliationType === "OTHER" ? "" : "hidden"}>
+        </div>
+        ${field("휴대폰 번호", "phone", data.contact, { required: true, placeholder: "010-0000-0000" })}
+        ${field("이메일 주소", "email", data.email, { required: true, type: "email" })}
+        <div class="field">
+          <label>참석 희망일</label>
+          <div class="checkbox-group">${attendanceHtml}</div>
+        </div>
+        <div class="field">
+          <label>교사 출장 증빙 공문 필요 여부</label>
+          <div class="radio-group">
+            <label class="radio-row"><input type="radio" name="teacherDocumentNeeded" value="yes" ${data.teacherDocumentNeeded ? "checked" : ""}> 필요함</label>
+            <label class="radio-row"><input type="radio" name="teacherDocumentNeeded" value="no" ${!data.teacherDocumentNeeded ? "checked" : ""}> 필요 없음</label>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderForeignerFields(data) {
+      const selectedDates = data.attendanceDates || [];
+      const attendanceHtml = ATTENDANCE_OPTIONS_FOREIGNER.map((option) => {
+        const checked = selectedDates.includes(option.value) ? "checked" : "";
+        return `<label class="checkbox-row"><input type="checkbox" name="attendanceDates" value="${option.value}" ${checked}> ${option.label}</label>`;
+      }).join("");
+
+      const transport = data.transportationOptions || [];
+      const arrival = splitDatetime(data.arrivalDatetime);
+      const departure = splitDatetime(data.departureDatetime);
+      const dietary = data.dietaryPreference || "NO_RESTRICTION";
+      const dietaryOptions = Object.entries(DIETARY_LABELS).map(([value, label]) => {
+        const checked = dietary === value ? "checked" : "";
+        return `<label class="radio-row"><input type="radio" name="dietaryPreference" value="${value}" ${checked}> ${label}</label>`;
+      }).join("");
+
+      return `
+        <div class="form-row-2">
+          ${field("Given Name", "givenName", data.givenName, { required: true })}
+          ${field("Family Name", "familyName", data.familyName, { required: true })}
+        </div>
+        ${field("Preferred Name on Badge", "preferredName", data.preferredName)}
+        ${field("E-mail Address", "email", data.email, { required: true, type: "email" })}
+        ${field("Mobile Phone Number", "phone", data.contact, { required: true, placeholder: "+82 10-1234-5678" })}
+        ${field("WhatsApp ID", "whatsappId", data.whatsappId, { required: true })}
+        <div class="field">
+          <label>Participation Date</label>
+          <div class="checkbox-group">${attendanceHtml}</div>
+        </div>
+        <div class="field">
+          <label>Visa Support Letter Required</label>
+          <div class="radio-group">
+            <label class="radio-row"><input type="radio" name="visaSupportNeeded" value="yes" ${data.visaSupportNeeded ? "checked" : ""}> Yes</label>
+            <label class="radio-row"><input type="radio" name="visaSupportNeeded" value="no" ${!data.visaSupportNeeded ? "checked" : ""}> No</label>
+          </div>
+          <div id="visaBlock" class="conditional-block" ${data.visaSupportNeeded ? "" : "hidden"}>
+            ${field("Passport Number", "passportNumber", data.passportNumber)}
+          </div>
+        </div>
+        <div class="field">
+          <label>Arrival Date &amp; Time at Incheon Airport (KST)</label>
+          <div class="datetime-row">
+            <input type="date" name="arrivalDate" value="${arrival.date}" required>
+            <input type="time" name="arrivalTime" value="${arrival.time}" required>
+          </div>
+        </div>
+        ${field("Arrival Flight Number", "arrivalFlightNumber", data.arrivalFlightNumber, { required: true })}
+        <div class="field">
+          <label>Departure Date &amp; Time from Incheon Airport (KST)</label>
+          <div class="datetime-row">
+            <input type="date" name="departureDate" value="${departure.date}" required>
+            <input type="time" name="departureTime" value="${departure.time}" required>
+          </div>
+        </div>
+        ${field("Departure Flight Number", "departureFlightNumber", data.departureFlightNumber, { required: true })}
+        <div class="field">
+          <label>Transportation Support</label>
+          <div class="checkbox-group">
+            <label class="checkbox-row"><input type="checkbox" name="transportationOptions" value="PICKUP" ${transport.includes("PICKUP") ? "checked" : ""}> Airport Pick-up</label>
+            <label class="checkbox-row"><input type="checkbox" name="transportationOptions" value="DROPOFF" ${transport.includes("DROPOFF") ? "checked" : ""}> Airport Drop-off</label>
+            <label class="checkbox-row"><input type="checkbox" name="transportationOptions" value="NONE" id="transportNone" ${transport.includes("NONE") ? "checked" : ""}> No transportation support</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Accommodation</label>
+          <div class="checkbox-group">
+            <label class="checkbox-row"><input type="checkbox" name="accommodationOrganizer" id="accommodationOrganizer" ${data.accommodationType === "ORGANIZER" ? "checked" : ""}> Organizer hotel booking (At Your Own Expense)</label>
+            <div id="accommodationDates" class="conditional-block" ${data.accommodationType === "ORGANIZER" ? "" : "hidden"}>
+              <div class="form-row-2">
+                <div class="field" style="margin-bottom:0"><label>Check-in Date</label><input type="date" name="checkInDate" value="${data.checkInDate || ""}"></div>
+                <div class="field" style="margin-bottom:0"><label>Check-out Date</label><input type="date" name="checkOutDate" value="${data.checkOutDate || ""}"></div>
+              </div>
+            </div>
+            <label class="checkbox-row"><input type="checkbox" name="accommodationOwn" id="accommodationOwn" ${data.accommodationType === "OWN" ? "checked" : ""}> Own accommodation</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Dietary Preferences</label>
+          <div class="radio-group">${dietaryOptions}</div>
+          <input type="text" name="dietaryDetails" value="${data.dietaryDetails || ""}" class="inline-input" placeholder="Details" ${dietary === "VEGETARIAN" || dietary === "OTHER" ? "" : "hidden"}>
+        </div>
+      `;
+    }
+
+    function bindForeignerInteractions() {
+      form.querySelectorAll('input[name="visaSupportNeeded"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          const block = document.getElementById("visaBlock");
+          if (!block) return;
+          const needsVisa = radio.value === "yes" && radio.checked;
+          block.hidden = !needsVisa;
+        });
+      });
+
+      const accommodationOrganizer = document.getElementById("accommodationOrganizer");
+      const accommodationOwn = document.getElementById("accommodationOwn");
+      const accommodationDates = document.getElementById("accommodationDates");
+      if (accommodationOrganizer && accommodationOwn && accommodationDates) {
+        accommodationOrganizer.addEventListener("change", () => {
+          if (accommodationOrganizer.checked) {
+            accommodationOwn.checked = false;
+            accommodationDates.hidden = false;
+          } else {
+            accommodationDates.hidden = true;
+          }
+        });
+        accommodationOwn.addEventListener("change", () => {
+          if (accommodationOwn.checked) {
+            accommodationOrganizer.checked = false;
+            accommodationDates.hidden = true;
+          }
+        });
+      }
+
+      const dietaryDetails = form.querySelector('[name="dietaryDetails"]');
+      form.querySelectorAll('input[name="dietaryPreference"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!dietaryDetails) return;
+          const needsDetails = (radio.value === "VEGETARIAN" || radio.value === "OTHER") && radio.checked;
+          dietaryDetails.hidden = !needsDetails;
+        });
+      });
     }
 
     function renderForm(data) {
@@ -61,27 +253,28 @@
       statusBox.hidden = false;
 
       form.innerHTML = `
-        ${field("이름", "name", data.name, { disabled: true })}
-        ${field("직함 / 직책", "title", data.title, { required: true })}
-        ${field("소속", "affiliation", data.affiliation, { required: true })}
-        ${field("연락처", "contact", data.contact, { required: true })}
-        ${isForeigner ? field("국적", "nationality", data.nationality, { required: true }) : ""}
-        ${isForeigner ? field("여권번호", "passportNumber", data.passportNumber, { required: true }) : ""}
-        ${isForeigner ? field("입국일", "arrivalDate", data.arrivalDate, { type: "date", required: true }) : ""}
-        ${isForeigner ? field("출국일", "departureDate", data.departureDate, { type: "date", required: true }) : ""}
-        ${isForeigner ? field("식성", "dietary", data.dietary, { type: "textarea" }) : ""}
-        ${isForeigner ? field("숙박 이용", "accommodation", data.accommodation, { type: "checkbox" }) : ""}
-        ${isForeigner ? field("숙박 일수", "accommodationDays", data.accommodationDays, { type: "number", hidden: data.accommodation ? "" : "hidden" }) : ""}
-        ${isForeigner ? field("차량 이용", "vehicleUsage", data.vehicleUsage, { type: "checkbox" }) : ""}
-        ${isForeigner ? field("특이 요청사항", "specialRequests", data.specialRequests, { type: "textarea" }) : ""}
-        ${field("개인정보 동의", "privacyConsent", data.privacyConsent, { type: "checkbox" })}
-        ${field("새 비밀번호", "password", "", { type: "password" })}
+        ${field("이름 / Name", "name", data.name, { disabled: true })}
+        ${!isForeigner ? field("직함 / 직책", "title", data.title, { required: true }) : ""}
+        ${!isForeigner ? renderDomesticFields(data) : renderForeignerFields(data)}
+        ${field("새 비밀번호", "password", "", { type: "password", placeholder: "4~8자리 숫자/영문" })}
         <div class="actions">
           <button type="submit" class="btn btn-primary">저장하기</button>
           <button type="button" class="btn btn-secondary" id="logoutBtn">로그아웃</button>
           ${isForeigner && data.paymentStatus === "PENDING" ? `<a href="payment.html?registrationId=${data.id}" class="btn btn-secondary">결제하러 가기</a>` : ""}
         </div>
       `;
+
+      const affiliationTypeOther = form.querySelector('[name="affiliationTypeOther"]');
+      form.querySelectorAll('[name="affiliationType"]').forEach((radio) => {
+        radio.addEventListener("change", () => {
+          if (!affiliationTypeOther) return;
+          const isOther = radio.value === "OTHER" && radio.checked;
+          affiliationTypeOther.hidden = !isOther;
+          affiliationTypeOther.required = isOther;
+        });
+      });
+
+      if (isForeigner) bindForeignerInteractions();
 
       const accommodation = form.querySelector('[name="accommodation"]');
       const accommodationDays = form.querySelector('[name="accommodationDays"]');
@@ -127,20 +320,61 @@
         title: formData.title,
         affiliation: formData.affiliation,
         contact: formData.contact,
-        privacyConsent: Boolean(formData.privacyConsent),
+        privacyConsent: true,
       };
 
-      if (registration.type === "FOREIGNER") {
+      if (registration.type === "DOMESTIC") {
+        const attendanceDates = [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
+          (el) => el.value,
+        );
         Object.assign(payload, {
-          nationality: formData.nationality,
-          passportNumber: formData.passportNumber,
+          title: formData.title,
+          affiliation: formData.affiliation,
+          phone: formData.phone,
+          email: formData.email,
+          affiliationType: formData.affiliationType,
+          affiliationTypeOther: formData.affiliationType === "OTHER" ? formData.affiliationTypeOther : null,
+          attendanceDates,
+          teacherDocumentNeeded: formData.teacherDocumentNeeded === "yes",
+        });
+      }
+
+      if (registration.type === "FOREIGNER") {
+        const attendanceDates = [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
+          (el) => el.value,
+        );
+        const transportationOptions = [...form.querySelectorAll('input[name="transportationOptions"]:checked')].map(
+          (el) => el.value,
+        );
+        let accommodationType = null;
+        if (formData.accommodationOrganizer) accommodationType = "ORGANIZER";
+        if (formData.accommodationOwn) accommodationType = "OWN";
+
+        Object.assign(payload, {
+          givenName: formData.givenName,
+          familyName: formData.familyName,
+          preferredName: formData.preferredName || null,
+          phone: formData.phone,
+          email: formData.email,
+          whatsappId: formData.whatsappId,
+          attendanceDates,
+          visaSupportNeeded: formData.visaSupportNeeded === "yes",
+          passportNumber: formData.visaSupportNeeded === "yes" ? formData.passportNumber : null,
           arrivalDate: formData.arrivalDate,
+          arrivalTime: formData.arrivalTime,
           departureDate: formData.departureDate,
-          dietary: formData.dietary,
-          accommodation: Boolean(formData.accommodation),
-          accommodationDays: formData.accommodation ? Number(formData.accommodationDays) : null,
-          vehicleUsage: Boolean(formData.vehicleUsage),
-          specialRequests: formData.specialRequests,
+          departureTime: formData.departureTime,
+          arrivalFlightNumber: formData.arrivalFlightNumber,
+          departureFlightNumber: formData.departureFlightNumber,
+          transportationOptions,
+          accommodationType,
+          checkInDate: formData.accommodationOrganizer ? formData.checkInDate : null,
+          checkOutDate: formData.accommodationOrganizer ? formData.checkOutDate : null,
+          dietaryPreference: formData.dietaryPreference,
+          dietaryDetails:
+            formData.dietaryPreference === "VEGETARIAN" || formData.dietaryPreference === "OTHER"
+              ? formData.dietaryDetails
+              : null,
         });
       }
 

@@ -1,0 +1,213 @@
+@font-face {
+  font-family: "Giants";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-1@1.1/Giants-Regular.woff2")
+    format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Giants";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2307-1@1.1/Giants-Bold.woff2")
+    format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+:root {
+  --apcse-primary: #1fa8a0;
+  --apcse-primary-dark: #178f88;
+}
+
+.home-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #111;
+  background: #d8f0ee url("../img/bg.jpg") center / cover no-repeat fixed;
+}
+
+.home-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 40px;
+}
+
+.home-logo {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111;
+  letter-spacing: -0.02em;
+}
+
+.home-mypage-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: 0.2s;
+}
+
+.home-mypage-btn:hover {
+  background: #f8f8f8;
+}
+
+.home-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px 24px;
+  text-align: center;
+}
+
+.home-title {
+  font-family: "Giants", sans-serif;
+  font-size: clamp(42px, 6vw, 64px);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 16px;
+  letter-spacing: -0.03em;
+}
+
+.home-desc {
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 400;
+  margin-bottom: 48px;
+  letter-spacing: -0.02em;
+}
+
+.home-choice-panel {
+  width: min(920px, 100%);
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(31, 168, 160, 0.08);
+}
+
+.home-choice-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.home-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px;
+  padding: 32px 24px;
+  border-radius: 24px;
+  font-size: clamp(24px, 3vw, 34px);
+  font-weight: 700;
+  line-height: 1.25;
+  transition: 0.2s;
+  letter-spacing: -0.02em;
+}
+
+.home-choice small {
+  display: block;
+  margin-top: 10px;
+  font-size: clamp(14px, 1.8vw, 18px);
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.home-choice.primary {
+  background: var(--apcse-primary);
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(31, 168, 160, 0.28);
+}
+
+.home-choice.primary:hover {
+  background: var(--apcse-primary-dark);
+}
+
+.home-choice.secondary {
+  background: #fff;
+  color: var(--apcse-primary);
+  border: 2px solid var(--apcse-primary);
+}
+
+.home-choice.secondary:hover {
+  background: rgba(31, 168, 160, 0.06);
+}
+
+.home-footer {
+  display: flex;
+  justify-content: center;
+  padding: 32px 24px 48px;
+}
+
+.home-return {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  color: #111;
+  font-size: 16px;
+  font-weight: 700;
+  transition: 0.2s;
+}
+
+.home-return:hover {
+  opacity: 0.75;
+}
+
+.home-return-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: #111;
+}
+
+.home-return-icon svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+}
+
+@media (max-width: 720px) {
+  .home-header {
+    padding: 20px;
+  }
+
+  .home-logo {
+    font-size: 22px;
+  }
+
+  .home-mypage-btn {
+    min-width: auto;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+
+  .home-choice-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-choice-panel {
+    padding: 20px;
+  }
+
+  .home-choice {
+    min-height: 140px;
+  }
+}

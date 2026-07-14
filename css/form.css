@@ -9,13 +9,17 @@
   gap: 20px;
 }
 
+.form-row-2 > .field {
+  min-width: 0;
+}
+
 @media (max-width: 640px) {
   .form-row-2 {
     grid-template-columns: 1fr;
   }
 }
 
-.field label {
+.field > label:not(.checkbox-row):not(.radio-row) {
   display: block;
   font-size: 14px;
   font-weight: 600;
@@ -33,7 +37,7 @@
   margin-top: 6px;
 }
 
-.field input,
+.field input:not([type="checkbox"]):not([type="radio"]),
 .field textarea,
 .field select {
   width: 100%;
@@ -49,20 +53,31 @@
   resize: vertical;
 }
 
-.field input:focus,
+.field input:not([type="checkbox"]):not([type="radio"]):focus,
 .field textarea:focus,
 .field select:focus {
   outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  border-color: #1fa8a0;
+  box-shadow: 0 0 0 3px rgba(31, 168, 160, 0.15);
 }
 
 .checkbox-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 14px;
+  font-weight: 400;
   color: #475569;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 3px;
+  padding: 0;
+  cursor: pointer;
 }
 
 .actions {
@@ -85,12 +100,12 @@
 }
 
 .btn-primary {
-  background: #2563eb;
+  background: #1fa8a0;
   color: #fff;
 }
 
 .btn-primary:hover {
-  background: #1d4ed8;
+  background: #178f88;
 }
 
 .btn-primary:disabled {
@@ -110,4 +125,124 @@
 
 #paypal-button-container {
   min-height: 48px;
+}
+
+.notice-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 14px;
+  color: #475569;
+  line-height: 1.7;
+}
+
+.notice-box p + p {
+  margin-top: 12px;
+}
+
+.notice-box .notice-title {
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.radio-group {
+  display: grid;
+  gap: 10px;
+}
+
+.radio-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.radio-row input[type="radio"] {
+  width: auto;
+  flex-shrink: 0;
+  margin-top: 3px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.checkbox-group {
+  display: grid;
+  gap: 10px;
+}
+
+.privacy-details {
+  margin-top: 12px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.privacy-details ul {
+  margin: 8px 0 0 18px;
+}
+
+.email-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.email-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.email-row .at {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.inline-input {
+  margin-top: 8px;
+}
+
+.datetime-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.datetime-row input {
+  width: 100%;
+  min-width: 0;
+}
+
+.conditional-block {
+  margin-top: 12px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.conditional-block .alert-note {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .datetime-row {
+    grid-template-columns: 1fr;
+  }
 }
