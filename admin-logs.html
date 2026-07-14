@@ -81,6 +81,16 @@
       return "attempt";
     }
 
+    async function readJsonResponse(res) {
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          "API 서버에 연결되지 않았습니다. Express 서버를 통해 열어주세요. (로컬: npm start 후 http://localhost:3000/admin-logs.html, 운영: https://apcse-web.onrender.com/admin-logs.html)",
+        );
+      }
+      return res.json();
+    }
+
     async function loadLogs() {
       const params = new URLSearchParams();
       const status = document.getElementById("statusFilter").value;
@@ -91,7 +101,7 @@
       const res = await fetch(`/api/admin/logs?${params.toString()}`, {
         headers: { "x-admin-password": adminPassword.trim() },
       });
-      const data = await res.json();
+      const data = await readJsonResponse(res);
       if (res.status === 401) {
         throw new Error("비밀번호가 일치하지 않습니다. Render Environment의 ADMIN_PASSWORD를 확인해주세요.");
       }
