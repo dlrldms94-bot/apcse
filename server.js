@@ -34,7 +34,13 @@ const REGISTRATION_FEE = {
 
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser(process.env.SESSION_SECRET || "apcse-dev-secret"));
-app.use("/css", express.static(path.join(ROOT_DIR, "css")));
+app.use(
+  "/css",
+  express.static(path.join(ROOT_DIR, "css"), {
+    maxAge: 0,
+    etag: true,
+  }),
+);
 
 function sendHtmlPage(res, filename) {
   const filePath = path.join(ROOT_DIR, filename);
