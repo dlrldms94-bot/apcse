@@ -1,5 +1,5 @@
-.site-header-inner,
-.page {
+body.admin-layout .site-header-inner,
+body.admin-layout .page {
   max-width: 1200px;
 }
 
