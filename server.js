@@ -139,6 +139,10 @@ function isValidPhone(phone) {
   return /^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(String(phone));
 }
 
+function isValidInternationalPhone(phone) {
+  return /^\+?[0-9][0-9\s\-()]{7,24}$/.test(String(phone).trim());
+}
+
 function splitDatetime(datetime) {
   if (!datetime || !datetime.includes("T")) {
     return { date: "", time: "" };
