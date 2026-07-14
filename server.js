@@ -19,6 +19,7 @@ const HTML_PAGES = [
   "mypage.html",
   "mypage-edit.html",
   "admin-logs.html",
+  "admin-registrations.html",
   "preview.html",
 ];
 
