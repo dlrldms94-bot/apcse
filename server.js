@@ -4,6 +4,7 @@ const path = require("path");
 const fs = require("fs");
 const express = require("express");
 const cookieParser = require("cookie-parser");
+const multer = require("multer");
 const { pool, initDatabase } = require("./lib/db");
 const { hashPassword, verifyPassword } = require("./lib/password");
 const { serverLog, getRequestMeta, sanitizePayload } = require("./lib/logger");
@@ -31,6 +32,28 @@ const REGISTRATION_FEE = {
   amount: Number(process.env.REGISTRATION_FEE_AMOUNT || 100),
   currency: process.env.REGISTRATION_FEE_CURRENCY || "USD",
 };
+const SECRETARIAT_EMAIL = "apcse2026@i-csec.org";
+const DOCUMENT_REQUEST_TYPES = new Set([
+  "INVITATION",
+  "PARTICIPATION",
+  "VISA_SUPPORT",
+  "OTHER",
+]);
+const HOTEL_FORM_MIMES = new Set([
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+]);
+const PASSPORT_COPY_MIMES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/jpg",
+]);
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 app.use(express.json({ limit: "2mb" }));
 app.use(cookieParser(process.env.SESSION_SECRET || "apcse-dev-secret"));
@@ -41,6 +64,46 @@ app.use(
     etag: true,
   }),
 );
+app.use("/files", express.static(path.join(ROOT_DIR, "files")));
+
+function parseJsonArray(value) {
+  if (Array.isArray(value)) return value;
+  if (typeof value === "string" && value.trim()) {
+    try {
+      const parsed = JSON.parse(value);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return value.split(",").map((item) => item.trim()).filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function parseBoolean(value) {
+  return value === true || value === "true" || value === "yes" || value === "1";
+}
+
+function isAllowedUpload(file, allowedMimes) {
+  return file && allowedMimes.has(file.mimetype);
+}
+
+function sendStoredFile(res, row, prefix) {
+  if (!row) {
+    return res.status(404).json({ error: "File not found." });
+  }
+  const filename = row[`${prefix}_filename`];
+  const mimetype = row[`${prefix}_mimetype`];
+  const data = row[`${prefix}_data`];
+  if (!filename || !data) {
+    return res.status(404).json({ error: "File not found." });
+  }
+  res.setHeader("Content-Type", mimetype || "application/octet-stream");
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="${filename.replace(/"/g, "")}"`,
+  );
+  return res.send(data);
+}
 
 function sendHtmlPage(res, filename) {
   const filePath = path.join(ROOT_DIR, filename);
@@ -124,6 +187,12 @@ function serializeRegistration(row) {
     paymentStatus: row.payment_status,
     amount: row.amount,
     currency: row.currency,
+    documentRequests: row.document_requests || [],
+    documentRequestOther: row.document_request_other,
+    hasHotelForm: Boolean(row.hotel_form_filename),
+    hotelFormFilename: row.hotel_form_filename,
+    hasPassportCopy: Boolean(row.passport_copy_filename),
+    passportCopyFilename: row.passport_copy_filename,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -368,7 +437,13 @@ app.post("/api/register/domestic", async (req, res) => {
   }
 });
 
-app.post("/api/register/foreigner", async (req, res) => {
+app.post(
+  "/api/register/foreigner",
+  upload.fields([
+    { name: "hotelForm", maxCount: 1 },
+    { name: "passportCopy", maxCount: 1 },
+  ]),
+  async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
 
@@ -393,22 +468,24 @@ app.post("/api/register/foreigner", async (req, res) => {
     email,
     phone,
     whatsappId,
-    attendanceDates,
-    visaSupportNeeded,
-    passportNumber,
     arrivalDatetime,
     departureDatetime,
     arrivalFlightNumber,
     departureFlightNumber,
-    transportationOptions,
     accommodationType,
-    checkInDate,
-    checkOutDate,
     dietaryPreference,
     dietaryDetails,
-    privacyConsent,
     password,
   } = body;
+
+  const attendanceDates = parseJsonArray(body.attendanceDates);
+  const transportationOptions = parseJsonArray(body.transportationOptions);
+  const documentRequests = parseJsonArray(body.documentRequests);
+  const documentRequestOther = String(body.documentRequestOther || "").trim() || null;
+  const visaSupportNeeded = documentRequests.includes("VISA_SUPPORT");
+  const privacyConsent = parseBoolean(body.privacyConsent);
+  const hotelFormFile = req.files?.hotelForm?.[0];
+  const passportCopyFile = req.files?.passportCopy?.[0];
 
   const fullName =
     givenName && familyName ? `${String(givenName).trim()} ${String(familyName).trim()}` : "";
@@ -490,31 +567,32 @@ app.post("/api/register/foreigner", async (req, res) => {
       .json({ error: "Please select valid transportation options." });
   }
 
-  if (Boolean(visaSupportNeeded) && !passportNumber) {
+  if (documentRequests.some((item) => !DOCUMENT_REQUEST_TYPES.has(item))) {
+    return res.status(400).json({ error: "Please select valid document request options." });
+  }
+
+  if (documentRequests.includes("OTHER") && !documentRequestOther) {
     return res
       .status(400)
-      .json({ error: "Please enter your passport number for visa support." });
+      .json({ error: "Please specify your other document request." });
+  }
+
+  if (visaSupportNeeded && !isAllowedUpload(passportCopyFile, PASSPORT_COPY_MIMES)) {
+    return res
+      .status(400)
+      .json({ error: "Please upload a passport copy for Visa Support Letter." });
   }
 
   if (accommodationType && !ACCOMMODATION_TYPES.has(accommodationType)) {
     return res.status(400).json({ error: "Please select a valid accommodation option." });
   }
 
-  if (accommodationType === "ORGANIZER" && (!checkInDate || !checkOutDate)) {
-    return res
-      .status(400)
-      .json({ error: "Please enter check-in and check-out dates." });
-  }
-
-  if (
-    accommodationType === "ORGANIZER" &&
-    checkInDate &&
-    checkOutDate &&
-    checkOutDate <= checkInDate
-  ) {
-    return res
-      .status(400)
-      .json({ error: "Check-out date must be after check-in date." });
+  if (accommodationType === "ORGANIZER") {
+    if (!isAllowedUpload(hotelFormFile, HOTEL_FORM_MIMES)) {
+      return res.status(400).json({
+        error: "Please upload the completed hotel reservation form (PDF or Word).",
+      });
+    }
   }
 
   if (!isValidPassword(password)) {
@@ -532,9 +610,12 @@ app.post("/api/register/foreigner", async (req, res) => {
         visa_support_needed, passport_number, arrival_datetime, departure_datetime,
         arrival_flight_number, departure_flight_number, transportation_options,
         accommodation_type, check_in_date, check_out_date, dietary_preference, dietary_details,
+        hotel_form_filename, hotel_form_mimetype, hotel_form_data,
+        document_requests, document_request_other,
+        passport_copy_filename, passport_copy_mimetype, passport_copy_data,
         payment_status, amount, currency
       ) VALUES (
-        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,'PENDING',$23,$24
+        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,'PENDING',$32,$33
       ) RETURNING *`,
       [
         fullName,
@@ -547,18 +628,26 @@ app.post("/api/register/foreigner", async (req, res) => {
         preferredName || null,
         whatsappId,
         attendanceDates,
-        Boolean(visaSupportNeeded),
-        passportNumber || null,
+        visaSupportNeeded,
+        null,
         arrivalDatetime,
         departureDatetime,
         arrivalFlightNumber,
         departureFlightNumber,
         transportationOptions,
         accommodationType || null,
-        accommodationType === "ORGANIZER" ? checkInDate : null,
-        accommodationType === "ORGANIZER" ? checkOutDate : null,
+        null,
+        null,
         dietaryPreference,
         dietaryDetails || null,
+        accommodationType === "ORGANIZER" ? hotelFormFile.originalname : null,
+        accommodationType === "ORGANIZER" ? hotelFormFile.mimetype : null,
+        accommodationType === "ORGANIZER" ? hotelFormFile.buffer : null,
+        documentRequests.length ? documentRequests : null,
+        documentRequestOther,
+        visaSupportNeeded ? passportCopyFile.originalname : null,
+        visaSupportNeeded ? passportCopyFile.mimetype : null,
+        visaSupportNeeded ? passportCopyFile.buffer : null,
         REGISTRATION_FEE.amount,
         REGISTRATION_FEE.currency,
       ],
@@ -775,27 +864,49 @@ app.post("/api/payment/capture", async (req, res) => {
 
 app.post("/api/mypage/login", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
-  const { name, password } = req.body || {};
+  const givenName = String(req.body?.givenName || "").trim();
+  const familyName = String(req.body?.familyName || "").trim();
+  const legacyName = String(req.body?.name || "").trim();
+  const password = req.body?.password;
+  const loginDisplayName = familyName
+    ? `${givenName} ${familyName}`
+    : givenName || legacyName;
 
   await serverLog({
     event: "mypage.login.attempt",
     category: "MYPAGE",
     status: "ATTEMPT",
-    applicantName: name,
+    applicantName: loginDisplayName,
     ipAddress,
     userAgent,
     metadata: { payload: sanitizePayload(req.body) },
   });
 
-  if (!name || !password) {
+  if ((!givenName && !legacyName) || !password) {
     return res.status(400).json({ error: "이름과 비밀번호를 입력해주세요." });
   }
 
   try {
-    const result = await pool.query(
-      "SELECT * FROM registrations WHERE name = $1 ORDER BY created_at DESC LIMIT 1",
-      [name],
-    );
+    let result;
+    if (familyName) {
+      result = await pool.query(
+        `SELECT * FROM registrations
+         WHERE lower(trim(given_name)) = lower($1)
+           AND lower(trim(family_name)) = lower($2)
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [givenName, familyName],
+      );
+    } else {
+      const loginName = givenName || legacyName;
+      result = await pool.query(
+        `SELECT * FROM registrations
+         WHERE lower(trim(name)) = lower($1)
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [loginName],
+      );
+    }
     const registration = result.rows[0];
 
     if (!registration) {
@@ -803,7 +914,7 @@ app.post("/api/mypage/login", async (req, res) => {
         event: "mypage.login.failure",
         category: "MYPAGE",
         status: "FAILURE",
-        applicantName: name,
+        applicantName: loginDisplayName,
         errorMessage: "등록 정보를 찾을 수 없습니다.",
         statusCode: 404,
         ipAddress,
@@ -820,7 +931,7 @@ app.post("/api/mypage/login", async (req, res) => {
         status: "FAILURE",
         registrationType: registration.type,
         registrationId: registration.id,
-        applicantName: name,
+        applicantName: loginDisplayName,
         errorMessage: "비밀번호가 일치하지 않습니다.",
         statusCode: 401,
         ipAddress,
@@ -848,7 +959,7 @@ app.post("/api/mypage/login", async (req, res) => {
       event: "mypage.login.failure",
       category: "MYPAGE",
       status: "FAILURE",
-      applicantName: name,
+      applicantName: loginDisplayName,
       errorMessage: error.message,
       statusCode: 500,
       ipAddress,
@@ -932,7 +1043,25 @@ app.put("/api/mypage/me", async (req, res) => {
       attendance_dates: body.attendanceDates ?? registration.attendance_dates,
       teacher_document_needed:
         body.teacherDocumentNeeded ?? registration.teacher_document_needed,
+      document_requests: body.documentRequests ?? registration.document_requests,
+      document_request_other: body.documentRequestOther ?? registration.document_request_other,
     };
+
+    if (Array.isArray(body.documentRequests)) {
+      const invalidDocument = body.documentRequests.some(
+        (item) => !DOCUMENT_REQUEST_TYPES.has(item),
+      );
+      if (invalidDocument) {
+        return res.status(400).json({ error: "Invalid document request type." });
+      }
+      fields.document_requests = body.documentRequests;
+      fields.document_request_other = body.documentRequests.includes("OTHER")
+        ? body.documentRequestOther || null
+        : null;
+      if (registration.type === "FOREIGNER") {
+        fields.visa_support_needed = body.documentRequests.includes("VISA_SUPPORT");
+      }
+    }
 
     if (registration.type === "FOREIGNER") {
       const arrivalDatetime =
@@ -953,8 +1082,11 @@ app.put("/api/mypage/me", async (req, res) => {
         whatsapp_id: body.whatsappId ?? registration.whatsapp_id,
         attendance_dates: body.attendanceDates ?? registration.attendance_dates,
         visa_support_needed:
-          body.visaSupportNeeded ?? registration.visa_support_needed,
-        passport_number: body.passportNumber ?? registration.passport_number,
+          body.documentRequests !== undefined
+            ? Array.isArray(body.documentRequests) &&
+              body.documentRequests.includes("VISA_SUPPORT")
+            : body.visaSupportNeeded ?? registration.visa_support_needed,
+        passport_number: registration.passport_number,
         arrival_datetime: arrivalDatetime,
         departure_datetime: departureDatetime,
         arrival_flight_number:
@@ -964,8 +1096,6 @@ app.put("/api/mypage/me", async (req, res) => {
         transportation_options:
           body.transportationOptions ?? registration.transportation_options,
         accommodation_type: body.accommodationType ?? registration.accommodation_type,
-        check_in_date: body.checkInDate ?? registration.check_in_date,
-        check_out_date: body.checkOutDate ?? registration.check_out_date,
         dietary_preference:
           body.dietaryPreference ?? registration.dietary_preference,
         dietary_details: body.dietaryDetails ?? registration.dietary_details,
@@ -998,8 +1128,9 @@ app.put("/api/mypage/me", async (req, res) => {
         arrival_flight_number = $19, departure_flight_number = $20, transportation_options = $21,
         accommodation_type = $22, check_in_date = $23, check_out_date = $24,
         dietary_preference = $25, dietary_details = $26, password_hash = $27,
+        document_requests = $28, document_request_other = $29,
         updated_at = NOW()
-      WHERE id = $28
+      WHERE id = $30
       RETURNING *`,
       [
         registration.type === "FOREIGNER" ? fields.name : registration.name,
@@ -1024,11 +1155,13 @@ app.put("/api/mypage/me", async (req, res) => {
         registration.type === "FOREIGNER" ? fields.departure_flight_number : registration.departure_flight_number,
         registration.type === "FOREIGNER" ? fields.transportation_options : registration.transportation_options,
         registration.type === "FOREIGNER" ? fields.accommodation_type : registration.accommodation_type,
-        registration.type === "FOREIGNER" ? fields.check_in_date : registration.check_in_date,
-        registration.type === "FOREIGNER" ? fields.check_out_date : registration.check_out_date,
+        registration.check_in_date,
+        registration.check_out_date,
         registration.type === "FOREIGNER" ? fields.dietary_preference : registration.dietary_preference,
         registration.type === "FOREIGNER" ? fields.dietary_details : registration.dietary_details,
         passwordHash,
+        fields.document_requests ?? registration.document_requests,
+        fields.document_request_other ?? registration.document_request_other,
         sessionId,
       ],
     );
@@ -1061,6 +1194,122 @@ app.put("/api/mypage/me", async (req, res) => {
       ipAddress,
       userAgent,
     });
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/mypage/upload/hotel-form", upload.single("hotelForm"), async (req, res) => {
+  const sessionId = getSessionRegistrationId(req);
+  if (!sessionId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (!isAllowedUpload(req.file, HOTEL_FORM_MIMES)) {
+    return res.status(400).json({ error: "Please upload a PDF or Word file." });
+  }
+  try {
+    await pool.query(
+      `UPDATE registrations SET
+        hotel_form_filename = $1,
+        hotel_form_mimetype = $2,
+        hotel_form_data = $3,
+        updated_at = NOW()
+      WHERE id = $4`,
+      [req.file.originalname, req.file.mimetype, req.file.buffer, sessionId],
+    );
+    return res.json({ success: true, filename: req.file.originalname });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/mypage/upload/passport-copy", upload.single("passportCopy"), async (req, res) => {
+  const sessionId = getSessionRegistrationId(req);
+  if (!sessionId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  if (!isAllowedUpload(req.file, PASSPORT_COPY_MIMES)) {
+    return res.status(400).json({ error: "Please upload a PDF or image file." });
+  }
+  try {
+    await pool.query(
+      `UPDATE registrations SET
+        passport_copy_filename = $1,
+        passport_copy_mimetype = $2,
+        passport_copy_data = $3,
+        updated_at = NOW()
+      WHERE id = $4`,
+      [req.file.originalname, req.file.mimetype, req.file.buffer, sessionId],
+    );
+    return res.json({ success: true, filename: req.file.originalname });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/mypage/files/hotel-form", async (req, res) => {
+  const sessionId = getSessionRegistrationId(req);
+  if (!sessionId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT hotel_form_filename, hotel_form_mimetype, hotel_form_data FROM registrations WHERE id = $1",
+      [sessionId],
+    );
+    return sendStoredFile(res, result.rows[0], "hotel_form");
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/mypage/files/passport-copy", async (req, res) => {
+  const sessionId = getSessionRegistrationId(req);
+  if (!sessionId) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT passport_copy_filename, passport_copy_mimetype, passport_copy_data FROM registrations WHERE id = $1",
+      [sessionId],
+    );
+    return sendStoredFile(res, result.rows[0], "passport_copy");
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/admin/registrations/:id/files/hotel-form", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT hotel_form_filename, hotel_form_mimetype, hotel_form_data FROM registrations WHERE id = $1",
+      [req.params.id],
+    );
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: "Registration not found." });
+    }
+    return sendStoredFile(res, result.rows[0], "hotel_form");
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/admin/registrations/:id/files/passport-copy", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT passport_copy_filename, passport_copy_mimetype, passport_copy_data FROM registrations WHERE id = $1",
+      [req.params.id],
+    );
+    if (!result.rows[0]) {
+      return res.status(404).json({ error: "Registration not found." });
+    }
+    return sendStoredFile(res, result.rows[0], "passport_copy");
+  } catch {
     return res.status(500).json({ error: "Server error" });
   }
 });

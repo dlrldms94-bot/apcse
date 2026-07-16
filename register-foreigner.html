@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Foreigner Pre-registration | APCSE</title>
+  <title>International Pre-registration | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
@@ -16,7 +16,7 @@
   </header>
 
   <main class="page">
-    <h1 class="page-title">Foreigner Pre-registration</h1>
+    <h1 class="page-title">International Pre-registration</h1>
 
     <div class="notice-box" style="margin-bottom: 24px;">
       <p>Welcome to APCSE 2026. Please fill out the form below to complete your pre-registration.</p>
@@ -30,8 +30,8 @@
           <div class="privacy-details">
             <p>On&amp;Me Co., Ltd. (the "Organizer") collects and uses personal information as follows for APCSE pre-registration and event operations.</p>
             <ul>
-              <li><strong>Items collected:</strong> Name, contact information, participation dates, visa support details, flight information, transportation/accommodation requests, dietary preferences, and My Page password</li>
-              <li><strong>Purpose:</strong> Pre-registration, event guidance, visa support, logistics coordination, and registration management</li>
+              <li><strong>Items collected:</strong> Name, contact information, participation dates, document request details, passport copy (when Visa Support Letter is requested), flight information, transportation/accommodation requests, hotel reservation form, dietary preferences, and My Page password</li>
+              <li><strong>Purpose:</strong> Pre-registration, event guidance, document issuance, logistics coordination, and registration management</li>
               <li><strong>Retention period:</strong> Destroyed within 1 year after the event ends (unless otherwise required by law)</li>
               <li><strong>Right to refuse:</strong> You may refuse consent, but pre-registration and event guidance will not be available.</li>
             </ul>
@@ -101,24 +101,34 @@
         </div>
 
         <div class="field">
-          <label>Do you require an Official Visa Support Letter from the organizer? <span class="req">*</span></label>
-          <div class="radio-group">
-            <label class="radio-row">
-              <input type="radio" name="visaSupportNeeded" value="yes" required>
-              Yes
+          <label>Document Request</label>
+          <div class="checkbox-group" id="documentRequestGroup">
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequests" value="INVITATION">
+              Invitation Letter
             </label>
-            <label class="radio-row">
-              <input type="radio" name="visaSupportNeeded" value="no">
-              No
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequests" value="PARTICIPATION">
+              Certificate of Participation
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequests" value="VISA_SUPPORT">
+              Visa Support Letter
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequests" value="OTHER" id="documentOtherCheckbox">
+              Other (please specify)
             </label>
           </div>
-          <div id="visaBlock" class="conditional-block" hidden>
+          <input type="text" name="documentRequestOther" id="documentRequestOther" class="inline-input" placeholder="Please specify other document request" hidden>
+          <div id="passportUploadBlock" class="conditional-block" hidden>
             <div class="field" style="margin-bottom: 0;">
-              <label>Passport Number <span class="req">*</span></label>
-              <input type="text" name="passportNumber" id="passportNumber">
+              <label>Passport Copy Upload <span class="req">*</span></label>
+              <input type="file" name="passportCopy" id="passportCopy" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf">
+              <p class="hint">Upload a scanned copy of your passport (PDF or image). Required when Visa Support Letter is selected.</p>
             </div>
-            <p class="alert-note">If YES, please email a scanned copy of your passport to the Secretariat (<a href="mailto:syjang@kosac.re.kr">syjang@kosac.re.kr</a>) immediately.</p>
           </div>
+          <p class="hint">Passport copy upload is not required for Invitation Letter or Certificate of Participation only.</p>
         </div>
 
         <div class="field">
@@ -165,6 +175,7 @@
               No transportation support needed.
             </label>
           </div>
+          <p class="hint">Shuttle buses are scheduled on October 13 at 00:00 and 00:00 (Incheon Airport → Hotel) and October 16 at 00:00 and 00:00 (Venue → Incheon Airport). Final operation and detailed schedules will be confirmed based on pre-survey results and announced separately in September.</p>
         </div>
 
         <div class="field">
@@ -176,15 +187,13 @@
             </label>
             <p class="hint">※ Please note: All room charges and incidental expenses must be paid individually by the participant upon check-out. A cancellation fee may apply in accordance with the hotel's policy if you change or cancel your booking at a later date.</p>
             <div id="accommodationDates" class="conditional-block" hidden>
-              <div class="form-row-2">
-                <div class="field" style="margin-bottom: 0;">
-                  <label>Check-in Date <span class="req">*</span></label>
-                  <input type="date" name="checkInDate" id="checkInDate">
-                </div>
-                <div class="field" style="margin-bottom: 0;">
-                  <label>Check-out Date <span class="req">*</span></label>
-                  <input type="date" name="checkOutDate" id="checkOutDate">
-                </div>
+              <p class="hint">
+                <a href="/files/Reservation%20Form.docx" download="Reservation Form.docx" class="btn btn-secondary" style="display:inline-flex;margin-bottom:12px;">Download Hotel Reservation Form</a>
+              </p>
+              <div class="field" style="margin-bottom: 0;">
+                <label>Upload Completed Hotel Form <span class="req">*</span></label>
+                <input type="file" name="hotelForm" id="hotelForm" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                <p class="hint">Accepted formats: PDF, Word (.doc, .docx)</p>
               </div>
             </div>
             <label class="checkbox-row">
@@ -251,38 +260,47 @@
     const form = document.getElementById("registerForm");
     const errorBox = document.getElementById("errorBox");
     const submitBtn = document.getElementById("submitBtn");
-    const visaBlock = document.getElementById("visaBlock");
-    const passportNumber = document.getElementById("passportNumber");
+    const documentRequestOther = document.getElementById("documentRequestOther");
+    const passportUploadBlock = document.getElementById("passportUploadBlock");
+    const passportCopy = document.getElementById("passportCopy");
     const accommodationOrganizer = document.getElementById("accommodationOrganizer");
     const accommodationOwn = document.getElementById("accommodationOwn");
     const accommodationDates = document.getElementById("accommodationDates");
-    const checkInDate = document.getElementById("checkInDate");
-    const checkOutDate = document.getElementById("checkOutDate");
+    const hotelForm = document.getElementById("hotelForm");
     const dietaryDetails = document.getElementById("dietaryDetails");
     const dietaryOtherRadio = document.getElementById("dietaryOtherRadio");
     const transportNone = document.getElementById("transportNone");
 
-    form.querySelectorAll('input[name="visaSupportNeeded"]').forEach((radio) => {
-      radio.addEventListener("change", () => {
-        const needsVisa = radio.value === "yes" && radio.checked;
-        visaBlock.hidden = !needsVisa;
-        passportNumber.required = needsVisa;
-        if (!needsVisa) passportNumber.value = "";
-      });
+    function getDocumentRequests() {
+      return [...form.querySelectorAll('input[name="documentRequests"]:checked')].map(
+        (el) => el.value,
+      );
+    }
+
+    function refreshDocumentRequestBlocks() {
+      const selected = getDocumentRequests();
+      const needsVisaSupport = selected.includes("VISA_SUPPORT");
+      documentRequestOther.hidden = !selected.includes("OTHER");
+      documentRequestOther.required = selected.includes("OTHER");
+      if (!selected.includes("OTHER")) documentRequestOther.value = "";
+      passportUploadBlock.hidden = !needsVisaSupport;
+      passportCopy.required = needsVisaSupport;
+      if (!needsVisaSupport) passportCopy.value = "";
+    }
+
+    form.querySelectorAll('input[name="documentRequests"]').forEach((checkbox) => {
+      checkbox.addEventListener("change", refreshDocumentRequestBlocks);
     });
 
     accommodationOrganizer.addEventListener("change", () => {
       if (accommodationOrganizer.checked) {
         accommodationOwn.checked = false;
         accommodationDates.hidden = false;
-        checkInDate.required = true;
-        checkOutDate.required = true;
+        hotelForm.required = true;
       } else {
         accommodationDates.hidden = true;
-        checkInDate.required = false;
-        checkOutDate.required = false;
-        checkInDate.value = "";
-        checkOutDate.value = "";
+        hotelForm.required = false;
+        hotelForm.value = "";
       }
     });
 
@@ -290,10 +308,8 @@
       if (accommodationOwn.checked) {
         accommodationOrganizer.checked = false;
         accommodationDates.hidden = true;
-        checkInDate.required = false;
-        checkOutDate.required = false;
-        checkInDate.value = "";
-        checkOutDate.value = "";
+        hotelForm.required = false;
+        hotelForm.value = "";
       }
     });
 
@@ -346,7 +362,7 @@
       const data = Object.fromEntries(new FormData(form));
       const attendanceDates = getAttendanceDates();
       const transportationOptions = getTransportationOptions();
-      const visaSupportNeeded = data.visaSupportNeeded === "yes";
+      const documentRequests = getDocumentRequests();
       const needsDietaryDetails =
         data.dietaryPreference === "VEGETARIAN" || data.dietaryPreference === "OTHER";
 
@@ -368,8 +384,14 @@
         return;
       }
 
-      if (visaSupportNeeded && !data.passportNumber?.trim()) {
-        errorBox.textContent = "Please enter your passport number for visa support.";
+      if (documentRequests.includes("OTHER") && !data.documentRequestOther?.trim()) {
+        errorBox.textContent = "Please specify your other document request.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (documentRequests.includes("VISA_SUPPORT") && !passportCopy.files.length) {
+        errorBox.textContent = "Please upload a passport copy for Visa Support Letter.";
         errorBox.hidden = false;
         return;
       }
@@ -381,13 +403,8 @@
       }
 
       if (accommodationOrganizer.checked) {
-        if (!data.checkInDate || !data.checkOutDate) {
-          errorBox.textContent = "Please enter check-in and check-out dates.";
-          errorBox.hidden = false;
-          return;
-        }
-        if (data.checkOutDate <= data.checkInDate) {
-          errorBox.textContent = "Check-out date must be after check-in date.";
+        if (!hotelForm.files.length) {
+          errorBox.textContent = "Please upload the completed hotel reservation form.";
           errorBox.hidden = false;
           return;
         }
@@ -413,32 +430,36 @@
       submitBtn.textContent = "Submitting...";
 
       try {
+        const payload = new FormData();
+        payload.append("givenName", data.givenName.trim());
+        payload.append("familyName", data.familyName.trim());
+        payload.append("preferredName", data.preferredName?.trim() || "");
+        payload.append("email", data.email.trim());
+        payload.append("phone", data.phone.trim());
+        payload.append("whatsappId", data.whatsappId.trim());
+        payload.append("attendanceDates", JSON.stringify(attendanceDates));
+        payload.append("documentRequests", JSON.stringify(documentRequests));
+        payload.append("documentRequestOther", data.documentRequestOther?.trim() || "");
+        payload.append("arrivalDatetime", buildDatetime(data.arrivalDate, data.arrivalTime));
+        payload.append("departureDatetime", buildDatetime(data.departureDate, data.departureTime));
+        payload.append("arrivalFlightNumber", data.arrivalFlightNumber.trim());
+        payload.append("departureFlightNumber", data.departureFlightNumber.trim());
+        payload.append("transportationOptions", JSON.stringify(transportationOptions));
+        payload.append("accommodationType", accommodationType || "");
+        payload.append("dietaryPreference", data.dietaryPreference);
+        payload.append("dietaryDetails", needsDietaryDetails ? data.dietaryDetails.trim() : "");
+        payload.append("privacyConsent", "true");
+        payload.append("password", data.password);
+        if (accommodationOrganizer.checked && hotelForm.files[0]) {
+          payload.append("hotelForm", hotelForm.files[0]);
+        }
+        if (documentRequests.includes("VISA_SUPPORT") && passportCopy.files[0]) {
+          payload.append("passportCopy", passportCopy.files[0]);
+        }
+
         const res = await fetch("/api/register/foreigner", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            givenName: data.givenName.trim(),
-            familyName: data.familyName.trim(),
-            preferredName: data.preferredName?.trim() || null,
-            email: data.email.trim(),
-            phone: data.phone.trim(),
-            whatsappId: data.whatsappId.trim(),
-            attendanceDates,
-            visaSupportNeeded,
-            passportNumber: visaSupportNeeded ? data.passportNumber.trim() : null,
-            arrivalDatetime: buildDatetime(data.arrivalDate, data.arrivalTime),
-            departureDatetime: buildDatetime(data.departureDate, data.departureTime),
-            arrivalFlightNumber: data.arrivalFlightNumber.trim(),
-            departureFlightNumber: data.departureFlightNumber.trim(),
-            transportationOptions,
-            accommodationType,
-            checkInDate: accommodationOrganizer.checked ? data.checkInDate : null,
-            checkOutDate: accommodationOrganizer.checked ? data.checkOutDate : null,
-            dietaryPreference: data.dietaryPreference,
-            dietaryDetails: needsDietaryDetails ? data.dietaryDetails.trim() : null,
-            privacyConsent: true,
-            password: data.password,
-          }),
+          body: payload,
         });
         const result = await res.json();
         if (!res.ok) {

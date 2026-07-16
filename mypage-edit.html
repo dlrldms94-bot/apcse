@@ -58,6 +58,13 @@
       OTHER: "Others & Severe Allergies",
     };
 
+    const DOCUMENT_REQUEST_LABELS = {
+      INVITATION: "Invitation Letter",
+      PARTICIPATION: "Certificate of Participation",
+      VISA_SUPPORT: "Visa Support Letter",
+      OTHER: "Other (please specify)",
+    };
+
     function splitDatetime(datetime) {
       if (!datetime || !datetime.includes("T")) return { date: "", time: "" };
       const [date, time] = datetime.split("T");
@@ -151,16 +158,7 @@
           <label>Participation Date</label>
           <div class="checkbox-group">${attendanceHtml}</div>
         </div>
-        <div class="field">
-          <label>Visa Support Letter Required</label>
-          <div class="radio-group">
-            <label class="radio-row"><input type="radio" name="visaSupportNeeded" value="yes" ${data.visaSupportNeeded ? "checked" : ""}> Yes</label>
-            <label class="radio-row"><input type="radio" name="visaSupportNeeded" value="no" ${!data.visaSupportNeeded ? "checked" : ""}> No</label>
-          </div>
-          <div id="visaBlock" class="conditional-block" ${data.visaSupportNeeded ? "" : "hidden"}>
-            ${field("Passport Number", "passportNumber", data.passportNumber)}
-          </div>
-        </div>
+        ${renderDocumentRequestFields(data)}
         <div class="field">
           <label>Arrival Date &amp; Time at Incheon Airport (KST)</label>
           <div class="datetime-row">
@@ -184,15 +182,20 @@
             <label class="checkbox-row"><input type="checkbox" name="transportationOptions" value="DROPOFF" ${transport.includes("DROPOFF") ? "checked" : ""}> Airport Drop-off</label>
             <label class="checkbox-row"><input type="checkbox" name="transportationOptions" value="NONE" id="transportNone" ${transport.includes("NONE") ? "checked" : ""}> No transportation support</label>
           </div>
+          <p class="hint">Shuttle buses are scheduled on October 13 at 00:00 and 00:00 (Incheon Airport → Hotel) and October 16 at 00:00 and 00:00 (Venue → Incheon Airport). Final operation and detailed schedules will be confirmed based on pre-survey results and announced separately in September.</p>
         </div>
         <div class="field">
           <label>Accommodation</label>
           <div class="checkbox-group">
             <label class="checkbox-row"><input type="checkbox" name="accommodationOrganizer" id="accommodationOrganizer" ${data.accommodationType === "ORGANIZER" ? "checked" : ""}> Organizer hotel booking (At Your Own Expense)</label>
             <div id="accommodationDates" class="conditional-block" ${data.accommodationType === "ORGANIZER" ? "" : "hidden"}>
-              <div class="form-row-2">
-                <div class="field" style="margin-bottom:0"><label>Check-in Date</label><input type="date" name="checkInDate" value="${data.checkInDate || ""}"></div>
-                <div class="field" style="margin-bottom:0"><label>Check-out Date</label><input type="date" name="checkOutDate" value="${data.checkOutDate || ""}"></div>
+              <p class="hint">
+                <a href="/files/Reservation%20Form.docx" download="Reservation Form.docx" class="btn btn-secondary" style="display:inline-flex;margin-bottom:12px;">Download Hotel Reservation Form</a>
+              </p>
+              <div class="field" style="margin-bottom:0">
+                <label>Upload Completed Hotel Form</label>
+                <input type="file" id="hotelFormUpload" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+                <p class="hint">${data.hasHotelForm ? `Uploaded: ${data.hotelFormFilename} <a href="/api/mypage/files/hotel-form" target="_blank">Download</a>` : "No file uploaded yet."}</p>
               </div>
             </div>
             <label class="checkbox-row"><input type="checkbox" name="accommodationOwn" id="accommodationOwn" ${data.accommodationType === "OWN" ? "checked" : ""}> Own accommodation</label>
@@ -206,16 +209,54 @@
       `;
     }
 
-    function bindForeignerInteractions() {
-      form.querySelectorAll('input[name="visaSupportNeeded"]').forEach((radio) => {
-        radio.addEventListener("change", () => {
-          const block = document.getElementById("visaBlock");
-          if (!block) return;
-          const needsVisa = radio.value === "yes" && radio.checked;
-          block.hidden = !needsVisa;
-        });
-      });
+    function renderDocumentRequestFields(data) {
+      const selected = data.documentRequests?.length
+        ? data.documentRequests
+        : data.visaSupportNeeded
+          ? ["VISA_SUPPORT"]
+          : [];
+      const checkboxes = Object.entries(DOCUMENT_REQUEST_LABELS).map(([value, label]) => {
+        const checked = selected.includes(value) ? "checked" : "";
+        return `<label class="checkbox-row"><input type="checkbox" name="documentRequests" value="${value}" ${checked}> ${label}</label>`;
+      }).join("");
 
+      return `
+        <div class="field">
+          <label>Document Request</label>
+          <div class="checkbox-group" id="documentRequestGroup">${checkboxes}</div>
+          <input type="text" name="documentRequestOther" value="${data.documentRequestOther || ""}" class="inline-input" placeholder="Please specify other document request" ${selected.includes("OTHER") ? "" : "hidden"}>
+        </div>
+        <div class="field" id="passportUploadBlock" ${selected.includes("VISA_SUPPORT") ? "" : "hidden"}>
+          <label>Passport Copy Upload (for Visa Support Letter)</label>
+          <input type="file" id="passportCopyUpload" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf">
+          <p class="hint">${data.hasPassportCopy ? `Uploaded: ${data.passportCopyFilename} <a href="/api/mypage/files/passport-copy" target="_blank">Download</a>` : "Upload a scanned copy of your passport (PDF or image)."}</p>
+          <p class="hint">For Invitation Letter or Certificate of Participation only, passport copy upload is not required.</p>
+        </div>
+      `;
+    }
+
+    function bindDocumentRequestInteractions() {
+      const otherInput = form.querySelector('[name="documentRequestOther"]');
+      const passportBlock = document.getElementById("passportUploadBlock");
+
+      function refreshDocumentBlocks() {
+        const selected = [...form.querySelectorAll('input[name="documentRequests"]:checked')].map((el) => el.value);
+        if (otherInput) {
+          otherInput.hidden = !selected.includes("OTHER");
+          otherInput.required = selected.includes("OTHER");
+        }
+        if (passportBlock) {
+          passportBlock.hidden = !selected.includes("VISA_SUPPORT");
+        }
+      }
+
+      form.querySelectorAll('input[name="documentRequests"]').forEach((el) => {
+        el.addEventListener("change", refreshDocumentBlocks);
+      });
+      refreshDocumentBlocks();
+    }
+
+    function bindForeignerInteractions() {
       const accommodationOrganizer = document.getElementById("accommodationOrganizer");
       const accommodationOwn = document.getElementById("accommodationOwn");
       const accommodationDates = document.getElementById("accommodationDates");
@@ -256,7 +297,9 @@
         ${field("이름 / Name", "name", data.name, { disabled: true })}
         ${!isForeigner ? field("직함 / 직책", "title", data.title, { required: true }) : ""}
         ${!isForeigner ? renderDomesticFields(data) : renderForeignerFields(data)}
+        ${!isForeigner ? renderDocumentRequestFields(data) : ""}
         ${field("새 비밀번호", "password", "", { type: "password", placeholder: "4~8자리 숫자/영문" })}
+        <p class="hint">비밀번호를 잊으셨다면 사무국으로 문의해 주세요: <a href="mailto:apcse2026@i-csec.org">apcse2026@i-csec.org</a></p>
         <div class="actions">
           <button type="submit" class="btn btn-primary">저장하기</button>
           <button type="button" class="btn btn-secondary" id="logoutBtn">로그아웃</button>
@@ -275,6 +318,7 @@
       });
 
       if (isForeigner) bindForeignerInteractions();
+      bindDocumentRequestInteractions();
 
       const accommodation = form.querySelector('[name="accommodation"]');
       const accommodationDays = form.querySelector('[name="accommodationDays"]');
@@ -316,11 +360,18 @@
       successBox.hidden = true;
 
       const formData = Object.fromEntries(new FormData(form));
+      const documentRequests = [...form.querySelectorAll('input[name="documentRequests"]:checked')].map(
+        (el) => el.value,
+      );
       const payload = {
         title: formData.title,
         affiliation: formData.affiliation,
         contact: formData.contact,
         privacyConsent: true,
+        documentRequests,
+        documentRequestOther: documentRequests.includes("OTHER")
+          ? formData.documentRequestOther
+          : null,
       };
 
       if (registration.type === "DOMESTIC") {
@@ -358,8 +409,6 @@
           email: formData.email,
           whatsappId: formData.whatsappId,
           attendanceDates,
-          visaSupportNeeded: formData.visaSupportNeeded === "yes",
-          passportNumber: formData.visaSupportNeeded === "yes" ? formData.passportNumber : null,
           arrivalDate: formData.arrivalDate,
           arrivalTime: formData.arrivalTime,
           departureDate: formData.departureDate,
@@ -368,8 +417,6 @@
           departureFlightNumber: formData.departureFlightNumber,
           transportationOptions,
           accommodationType,
-          checkInDate: formData.accommodationOrganizer ? formData.checkInDate : null,
-          checkOutDate: formData.accommodationOrganizer ? formData.checkOutDate : null,
           dietaryPreference: formData.dietaryPreference,
           dietaryDetails:
             formData.dietaryPreference === "VEGETARIAN" || formData.dietaryPreference === "OTHER"
@@ -392,7 +439,22 @@
         return;
       }
 
+      const hotelInput = document.getElementById("hotelFormUpload");
+      if (hotelInput?.files?.length) {
+        const hotelData = new FormData();
+        hotelData.append("hotelForm", hotelInput.files[0]);
+        await fetch("/api/mypage/upload/hotel-form", { method: "POST", body: hotelData });
+      }
+
+      const passportInput = document.getElementById("passportCopyUpload");
+      if (passportInput?.files?.length) {
+        const passportData = new FormData();
+        passportData.append("passportCopy", passportInput.files[0]);
+        await fetch("/api/mypage/upload/passport-copy", { method: "POST", body: passportData });
+      }
+
       registration = result.registration;
+      renderForm(registration);
       successBox.textContent = result.message || "정보가 저장되었습니다.";
       successBox.hidden = false;
     });

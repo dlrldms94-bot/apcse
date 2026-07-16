@@ -17,18 +17,30 @@
 
   <main class="page">
     <h1 class="page-title">마이페이지</h1>
-    <p class="page-desc">등록 시 설정한 이름과 확인용 비밀번호를 입력해 주세요.<br>외국인 참가자: <strong>Given Name + Family Name</strong> 형식으로 입력 (예: John Smith)</p>
+    <p class="page-desc">
+      등록 시 설정한 이름과 확인용 비밀번호를 입력해 주세요.<br>
+      외국인 참가자: <strong>Given Name</strong>과 <strong>Family Name</strong>을 각각 입력<br>
+      내국인 참가자: 이름 전체를 <strong>Given Name</strong>에 입력 (Family Name은 비워두기)<br>
+      대소문자는 구분하지 않습니다.
+    </p>
 
     <div class="card login-box">
       <form id="loginForm" class="form-grid">
-        <div class="field">
-          <label>이름 <span class="req">*</span></label>
-          <input type="text" name="name" required>
+        <div class="form-row-2">
+          <div class="field">
+            <label>Given Name (First Name) <span class="req">*</span></label>
+            <input type="text" name="givenName" required autocomplete="given-name">
+          </div>
+          <div class="field">
+            <label>Family Name (Last Name)</label>
+            <input type="text" name="familyName" autocomplete="family-name">
+          </div>
         </div>
         <div class="field">
           <label>확인용 비밀번호 <span class="req">*</span></label>
           <input type="password" name="password" required>
         </div>
+        <p class="hint">비밀번호를 잊으셨다면 사무국으로 문의해 주세요: <a href="mailto:apcse2026@i-csec.org">apcse2026@i-csec.org</a></p>
         <div id="errorBox" class="alert error" hidden></div>
         <div class="actions">
           <button type="submit" class="btn btn-primary" id="submitBtn">확인</button>
@@ -53,7 +65,11 @@
         const res = await fetch("/api/mypage/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify({
+            givenName: data.givenName.trim(),
+            familyName: data.familyName.trim(),
+            password: data.password,
+          }),
         });
         const result = await res.json();
         if (!res.ok) throw new Error(result.error || "인증에 실패했습니다.");

@@ -118,6 +118,13 @@
       OTHER: "Others / Allergies",
     };
 
+    const DOCUMENT_REQUEST_LABELS = {
+      INVITATION: "Invitation Letter",
+      PARTICIPATION: "Certificate of Participation",
+      VISA_SUPPORT: "Visa Support Letter",
+      OTHER: "Other",
+    };
+
     let adminPassword = "";
     let allRegistrations = [];
 
@@ -223,7 +230,10 @@
 
     function detailRow(label, value) {
       if (value === null || value === undefined || value === "") return "";
-      return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+      const safeValue = String(value).includes("<a ")
+        ? value
+        : escapeHtml(value);
+      return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${safeValue}</dd></div>`;
     }
 
     function openDetail(row) {
@@ -255,16 +265,19 @@
               ? "불필요"
               : "",
         ),
-        detailRow("비자 지원", row.visaSupportNeeded ? "Yes" : row.visaSupportNeeded === false ? "No" : ""),
-        detailRow("여권번호", row.passportNumber),
+        detailRow(
+          "서류 발급 요청",
+          (row.documentRequests || [])
+            .map((item) => DOCUMENT_REQUEST_LABELS[item] || item)
+            .join(", "),
+        ),
+        detailRow("서류 요청 기타", row.documentRequestOther),
         detailRow("입국 (KST)", row.arrivalDatetime),
         detailRow("입국 항공편", row.arrivalFlightNumber),
         detailRow("출국 (KST)", row.departureDatetime),
         detailRow("출국 항공편", row.departureFlightNumber),
         detailRow("교통 지원", (row.transportationOptions || []).join(", ")),
         detailRow("숙박", row.accommodationType === "ORGANIZER" ? "주최 측 예약" : row.accommodationType === "OWN" ? "개별 예약" : ""),
-        detailRow("체크인", row.checkInDate),
-        detailRow("체크아웃", row.checkOutDate),
         detailRow(
           "식단",
           row.dietaryPreference
@@ -273,10 +286,42 @@
         ),
         detailRow("결제 상태", PAYMENT_LABELS[row.paymentStatus] || row.paymentStatus),
         detailRow("결제 금액", row.amount ? `${row.amount} ${row.currency}` : ""),
+        detailRow(
+          "호텔 양식",
+          row.hasHotelForm
+            ? `<a href="/api/admin/registrations/${row.id}/files/hotel-form" data-admin-download data-filename="${escapeHtml(row.hotelFormFilename)}">다운로드 (${escapeHtml(row.hotelFormFilename)})</a>`
+            : "",
+        ),
+        detailRow(
+          "여권 사본",
+          row.hasPassportCopy
+            ? `<a href="/api/admin/registrations/${row.id}/files/passport-copy" data-admin-download data-filename="${escapeHtml(row.passportCopyFilename)}">다운로드 (${escapeHtml(row.passportCopyFilename)})</a>`
+            : "",
+        ),
       ].filter(Boolean);
 
       document.getElementById("detailContent").innerHTML = `<dl class="detail-list">${lines.join("")}</dl>`;
       document.getElementById("detailModal").hidden = false;
+
+      document.querySelectorAll("[data-admin-download]").forEach((link) => {
+        link.addEventListener("click", async (event) => {
+          event.preventDefault();
+          const res = await fetch(link.getAttribute("href"), {
+            headers: { "x-admin-password": adminPassword.trim() },
+          });
+          if (!res.ok) {
+            alert("파일을 다운로드할 수 없습니다.");
+            return;
+          }
+          const blob = await res.blob();
+          const objectUrl = URL.createObjectURL(blob);
+          const tempLink = document.createElement("a");
+          tempLink.href = objectUrl;
+          tempLink.download = link.dataset.filename || "download";
+          tempLink.click();
+          URL.revokeObjectURL(objectUrl);
+        });
+      });
     }
 
     function closeDetail() {
@@ -323,6 +368,10 @@
         "이메일",
         "참석일",
         "결제상태",
+        "서류발급요청",
+        "서류요청기타",
+        "호텔양식",
+        "여권사본",
         "등록ID",
       ];
       const csvRows = [
@@ -337,6 +386,12 @@
             row.email,
             formatAttendanceDates(row.attendanceDates),
             PAYMENT_LABELS[row.paymentStatus] || row.paymentStatus,
+            (row.documentRequests || [])
+              .map((item) => DOCUMENT_REQUEST_LABELS[item] || item)
+              .join("; "),
+            row.documentRequestOther || "",
+            row.hasHotelForm ? row.hotelFormFilename || "Y" : "",
+            row.hasPassportCopy ? row.passportCopyFilename || "Y" : "",
             row.id,
           ]
             .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
