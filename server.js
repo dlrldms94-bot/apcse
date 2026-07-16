@@ -44,12 +44,15 @@ const HOTEL_FORM_MIMES = new Set([
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
+const HOTEL_FORM_EXTENSIONS = new Set([".pdf", ".doc", ".docx"]);
 const PASSPORT_COPY_MIMES = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
   "image/jpg",
 ]);
+const PASSPORT_COPY_EXTENSIONS = new Set([".pdf", ".jpg", ".jpeg", ".png"]);
+const BUILD_VERSION = "2026-07-16-regfix2";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -83,8 +86,11 @@ function parseBoolean(value) {
   return value === true || value === "true" || value === "yes" || value === "1";
 }
 
-function isAllowedUpload(file, allowedMimes) {
-  return file && allowedMimes.has(file.mimetype);
+function isAllowedUpload(file, allowedMimes, allowedExtensions) {
+  if (!file) return false;
+  if (allowedMimes.has(file.mimetype)) return true;
+  const ext = path.extname(String(file.originalname || "")).toLowerCase();
+  return allowedExtensions.has(ext);
 }
 
 function sendStoredFile(res, row, prefix) {
@@ -247,7 +253,7 @@ const TRANSPORTATION_OPTIONS = new Set(["PICKUP", "DROPOFF", "NONE"]);
 const ACCOMMODATION_TYPES = new Set(["ORGANIZER", "OWN"]);
 
 app.get("/api/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, build: BUILD_VERSION });
 });
 
 app.get("/api/config", (req, res) => {
@@ -577,7 +583,10 @@ app.post(
       .json({ error: "Please specify your other document request." });
   }
 
-  if (visaSupportNeeded && !isAllowedUpload(passportCopyFile, PASSPORT_COPY_MIMES)) {
+  if (
+    visaSupportNeeded &&
+    !isAllowedUpload(passportCopyFile, PASSPORT_COPY_MIMES, PASSPORT_COPY_EXTENSIONS)
+  ) {
     return res
       .status(400)
       .json({ error: "Please upload a passport copy for Visa Support Letter." });
@@ -588,7 +597,7 @@ app.post(
   }
 
   if (accommodationType === "ORGANIZER") {
-    if (!isAllowedUpload(hotelFormFile, HOTEL_FORM_MIMES)) {
+    if (!isAllowedUpload(hotelFormFile, HOTEL_FORM_MIMES, HOTEL_FORM_EXTENSIONS)) {
       return res.status(400).json({
         error: "Please upload the completed hotel reservation form (PDF or Word).",
       });
@@ -1203,7 +1212,7 @@ app.post("/api/mypage/upload/hotel-form", upload.single("hotelForm"), async (req
   if (!sessionId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  if (!isAllowedUpload(req.file, HOTEL_FORM_MIMES)) {
+  if (!isAllowedUpload(req.file, HOTEL_FORM_MIMES, HOTEL_FORM_EXTENSIONS)) {
     return res.status(400).json({ error: "Please upload a PDF or Word file." });
   }
   try {
@@ -1227,7 +1236,7 @@ app.post("/api/mypage/upload/passport-copy", upload.single("passportCopy"), asyn
   if (!sessionId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
-  if (!isAllowedUpload(req.file, PASSPORT_COPY_MIMES)) {
+  if (!isAllowedUpload(req.file, PASSPORT_COPY_MIMES, PASSPORT_COPY_EXTENSIONS)) {
     return res.status(400).json({ error: "Please upload a PDF or image file." });
   }
   try {
