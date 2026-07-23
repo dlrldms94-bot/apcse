@@ -133,6 +133,7 @@
 
         <div class="field">
           <label>Arrival Date &amp; Time at Incheon Airport (KST) <span class="req">*</span></label>
+          <p class="hint">If your flight times have not yet been confirmed, please provide your approximate preferred times.</p>
           <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
           <div class="datetime-row">
             <input type="date" name="arrivalDate" required>
@@ -141,12 +142,13 @@
         </div>
 
         <div class="field">
-          <label>Arrival Flight Number <span class="req">*</span></label>
-          <input type="text" name="arrivalFlightNumber" placeholder="e.g., KE123" required>
+          <label>Arrival Flight Number</label>
+          <input type="text" name="arrivalFlightNumber" placeholder="e.g., KE123">
         </div>
 
         <div class="field">
           <label>Departure Date &amp; Time from Incheon Airport (KST) <span class="req">*</span></label>
+          <p class="hint">If your flight times have not yet been confirmed, please provide your approximate preferred times.</p>
           <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
           <div class="datetime-row">
             <input type="date" name="departureDate" required>
@@ -155,8 +157,8 @@
         </div>
 
         <div class="field">
-          <label>Departure Flight Number <span class="req">*</span></label>
-          <input type="text" name="departureFlightNumber" placeholder="e.g., OZ456" required>
+          <label>Departure Flight Number</label>
+          <input type="text" name="departureFlightNumber" placeholder="e.g., OZ456">
         </div>
 
         <div class="field">
@@ -442,8 +444,8 @@
         payload.append("documentRequestOther", data.documentRequestOther?.trim() || "");
         payload.append("arrivalDatetime", buildDatetime(data.arrivalDate, data.arrivalTime));
         payload.append("departureDatetime", buildDatetime(data.departureDate, data.departureTime));
-        payload.append("arrivalFlightNumber", data.arrivalFlightNumber.trim());
-        payload.append("departureFlightNumber", data.departureFlightNumber.trim());
+        payload.append("arrivalFlightNumber", data.arrivalFlightNumber?.trim() || "");
+        payload.append("departureFlightNumber", data.departureFlightNumber?.trim() || "");
         payload.append("transportationOptions", JSON.stringify(transportationOptions));
         payload.append("accommodationType", accommodationType || "");
         payload.append("dietaryPreference", data.dietaryPreference);
@@ -465,7 +467,7 @@
         if (!res.ok) {
           throw new Error(result.error || "Registration failed.");
         }
-        location.href = `payment.html?registrationId=${result.id}`;
+        location.href = `register-complete.html?type=foreigner&id=${result.id}`;
       } catch (error) {
         errorBox.textContent = error.message;
         errorBox.hidden = false;

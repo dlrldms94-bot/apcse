@@ -15,8 +15,6 @@ Render Web Service → **Environment** 에서 아래 값을 직접 입력:
 |------|------|
 | `ADMIN_PASSWORD` | 관리자 로그 페이지 비밀번호 |
 | `SESSION_SECRET` | 마이페이지 세션용 랜덤 문자열 |
-| `PAYPAL_CLIENT_ID` | PayPal Sandbox Client ID |
-| `PAYPAL_CLIENT_SECRET` | PayPal Sandbox Secret |
 
 `DATABASE_URL` 은 PostgreSQL 연결로 자동 설정됩니다.  
 `APP_URL` 은 Render의 `RENDER_EXTERNAL_URL` 을 자동 사용합니다.
@@ -31,5 +29,3 @@ Render Web Service → **Environment** 에서 아래 값을 직접 입력:
 ## 4) 주의사항
 
 - Render Free 플랜은 15분 미사용 시 슬립 모드 (첫 접속 느릴 수 있음)
-- PayPal 결제 테스트는 Sandbox 키 설정 후 가능
-- 운영(Live) 전환 시 `PAYPAL_MODE=live` 로 변경

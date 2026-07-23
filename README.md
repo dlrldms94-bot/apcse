@@ -1,6 +1,6 @@
 # APCSE 사전등록
 
-HTML/CSS/JS + Express + PostgreSQL + PayPal
+HTML/CSS/JS + Express + PostgreSQL
 
 ## Render 배포 (원클릭)
 
@@ -10,7 +10,7 @@ HTML/CSS/JS + Express + PostgreSQL + PayPal
 
 https://render.com/deploy?repo=https://github.com/dlrldms94-bot/apcse
 
-배포 후 Render Dashboard에서 `ADMIN_PASSWORD`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET` 을 설정하세요.
+배포 후 Render Dashboard에서 `ADMIN_PASSWORD` 를 설정하세요.
 
 ## 페이지
 
@@ -19,7 +19,6 @@ https://render.com/deploy?repo=https://github.com/dlrldms94-bot/apcse
 | `/index.html` | 내국인/외국인 선택 |
 | `/register-domestic.html` | 내국인 사전등록 |
 | `/register-foreigner.html` | 외국인 사전등록 |
-| `/payment.html` | PayPal 결제 |
 | `/mypage.html` | 마이페이지 |
 | `/admin-logs.html` | 관리자 로그 |
 | `/preview.html` | 컨펌용 페이지 목록 |

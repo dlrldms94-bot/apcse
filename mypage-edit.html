@@ -161,20 +161,24 @@
         ${renderDocumentRequestFields(data)}
         <div class="field">
           <label>Arrival Date &amp; Time at Incheon Airport (KST)</label>
+          <p class="hint">If your flight times have not yet been confirmed, please provide your approximate preferred times.</p>
+          <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
           <div class="datetime-row">
             <input type="date" name="arrivalDate" value="${arrival.date}" required>
             <input type="time" name="arrivalTime" value="${arrival.time}" required>
           </div>
         </div>
-        ${field("Arrival Flight Number", "arrivalFlightNumber", data.arrivalFlightNumber, { required: true })}
+        ${field("Arrival Flight Number", "arrivalFlightNumber", data.arrivalFlightNumber)}
         <div class="field">
           <label>Departure Date &amp; Time from Incheon Airport (KST)</label>
+          <p class="hint">If your flight times have not yet been confirmed, please provide your approximate preferred times.</p>
+          <p class="hint">All times are based on Korea Standard Time (KST, UTC+9).</p>
           <div class="datetime-row">
             <input type="date" name="departureDate" value="${departure.date}" required>
             <input type="time" name="departureTime" value="${departure.time}" required>
           </div>
         </div>
-        ${field("Departure Flight Number", "departureFlightNumber", data.departureFlightNumber, { required: true })}
+        ${field("Departure Flight Number", "departureFlightNumber", data.departureFlightNumber)}
         <div class="field">
           <label>Transportation Support</label>
           <div class="checkbox-group">
@@ -289,8 +293,7 @@
 
     function renderForm(data) {
       const isForeigner = data.type === "FOREIGNER";
-      statusBox.innerHTML = `등록 유형: <strong>${isForeigner ? "외국인" : "내국인"}</strong>` +
-        (isForeigner ? ` / 결제 상태: <strong>${data.paymentStatus === "PAID" ? "결제 완료" : data.paymentStatus === "PENDING" ? "결제 대기" : data.paymentStatus}</strong>` : "");
+      statusBox.innerHTML = `등록 유형: <strong>${isForeigner ? "외국인" : "내국인"}</strong>`;
       statusBox.hidden = false;
 
       form.innerHTML = `
@@ -303,7 +306,6 @@
         <div class="actions">
           <button type="submit" class="btn btn-primary">저장하기</button>
           <button type="button" class="btn btn-secondary" id="logoutBtn">로그아웃</button>
-          ${isForeigner && data.paymentStatus === "PENDING" ? `<a href="payment.html?registrationId=${data.id}" class="btn btn-secondary">결제하러 가기</a>` : ""}
         </div>
       `;
 

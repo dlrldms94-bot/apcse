@@ -8,14 +8,12 @@ const multer = require("multer");
 const { pool, initDatabase } = require("./lib/db");
 const { hashPassword, verifyPassword } = require("./lib/password");
 const { serverLog, getRequestMeta, sanitizePayload } = require("./lib/logger");
-const { createPayPalOrder, capturePayPalOrder } = require("./lib/paypal");
 
 const ROOT_DIR = __dirname;
 const HTML_PAGES = [
   "index.html",
   "register-domestic.html",
   "register-foreigner.html",
-  "payment.html",
   "register-complete.html",
   "mypage.html",
   "mypage-edit.html",
@@ -28,10 +26,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const ADMIN_PASSWORD = (process.env.ADMIN_PASSWORD || "apcse2026!").trim();
 const SESSION_COOKIE = "apcse_session";
-const REGISTRATION_FEE = {
-  amount: Number(process.env.REGISTRATION_FEE_AMOUNT || 100),
-  currency: process.env.REGISTRATION_FEE_CURRENCY || "USD",
-};
 const SECRETARIAT_EMAIL = "apcse2026@i-csec.org";
 const DOCUMENT_REQUEST_TYPES = new Set([
   "INVITATION",
@@ -190,9 +184,6 @@ function serializeRegistration(row) {
     accommodationDays: row.accommodation_days,
     vehicleUsage: row.vehicle_usage,
     specialRequests: row.special_requests,
-    paymentStatus: row.payment_status,
-    amount: row.amount,
-    currency: row.currency,
     documentRequests: row.document_requests || [],
     documentRequestOther: row.document_request_other,
     hasHotelForm: Boolean(row.hotel_form_filename),
@@ -254,13 +245,6 @@ const ACCOMMODATION_TYPES = new Set(["ORGANIZER", "OWN"]);
 
 app.get("/api/health", (req, res) => {
   res.json({ ok: true, build: BUILD_VERSION });
-});
-
-app.get("/api/config", (req, res) => {
-  res.json({
-    paypalClientId: process.env.PAYPAL_CLIENT_ID || "",
-    registrationFee: REGISTRATION_FEE,
-  });
 });
 
 app.post("/api/register/domestic", async (req, res) => {
@@ -507,8 +491,6 @@ app.post(
     !attendanceDates.length ||
     !arrivalDatetime ||
     !departureDatetime ||
-    !arrivalFlightNumber ||
-    !departureFlightNumber ||
     !Array.isArray(transportationOptions) ||
     !transportationOptions.length ||
     !dietaryPreference
@@ -624,7 +606,7 @@ app.post(
         passport_copy_filename, passport_copy_mimetype, passport_copy_data,
         payment_status, amount, currency
       ) VALUES (
-        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'PENDING',$31,$32
+        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'NOT_REQUIRED',NULL,NULL
       ) RETURNING *`,
       [
         fullName,
@@ -641,8 +623,8 @@ app.post(
         null,
         arrivalDatetime,
         departureDatetime,
-        arrivalFlightNumber,
-        departureFlightNumber,
+        String(arrivalFlightNumber || "").trim() || null,
+        String(departureFlightNumber || "").trim() || null,
         transportationOptions,
         accommodationType || null,
         null,
@@ -657,8 +639,6 @@ app.post(
         visaSupportNeeded ? passportCopyFile.originalname : null,
         visaSupportNeeded ? passportCopyFile.mimetype : null,
         visaSupportNeeded ? passportCopyFile.buffer : null,
-        REGISTRATION_FEE.amount,
-        REGISTRATION_FEE.currency,
       ],
     );
     const registration = result.rows[0];
@@ -674,12 +654,11 @@ app.post(
       statusCode: 200,
       ipAddress,
       userAgent,
-      metadata: { paymentStatus: "PENDING" },
     });
 
     return res.json({
       id: registration.id,
-      message: "Registration saved. Please proceed to payment.",
+      message: "Registration completed successfully.",
     });
   } catch (error) {
     await serverLog({
@@ -697,177 +676,6 @@ app.post(
     return res
       .status(500)
       .json({ error: "An error occurred during registration." });
-  }
-});
-
-app.post("/api/payment/create-order", async (req, res) => {
-  const { ipAddress, userAgent } = getRequestMeta(req);
-  const { registrationId } = req.body || {};
-
-  await serverLog({
-    event: "payment.create_order.attempt",
-    category: "PAYMENT",
-    status: "ATTEMPT",
-    registrationType: "FOREIGNER",
-    registrationId,
-    ipAddress,
-    userAgent,
-  });
-
-  if (!registrationId) {
-    return res.status(400).json({ error: "Registration ID is required." });
-  }
-
-  try {
-    const result = await pool.query(
-      "SELECT * FROM registrations WHERE id = $1",
-      [registrationId],
-    );
-    const registration = result.rows[0];
-
-    if (!registration || registration.type !== "FOREIGNER") {
-      await serverLog({
-        event: "payment.create_order.failure",
-        category: "PAYMENT",
-        status: "FAILURE",
-        registrationId,
-        errorMessage: "Registration not found.",
-        statusCode: 404,
-        ipAddress,
-        userAgent,
-      });
-      return res.status(404).json({ error: "Registration not found." });
-    }
-
-    if (registration.payment_status === "PAID") {
-      return res.status(400).json({ error: "Payment already completed." });
-    }
-
-    const order = await createPayPalOrder(
-      registrationId,
-      registration.amount || REGISTRATION_FEE.amount,
-      registration.currency || REGISTRATION_FEE.currency,
-    );
-
-    await pool.query(
-      "UPDATE registrations SET paypal_order_id = $1, updated_at = NOW() WHERE id = $2",
-      [order.id, registrationId],
-    );
-
-    await serverLog({
-      event: "payment.create_order.success",
-      category: "PAYMENT",
-      status: "SUCCESS",
-      registrationType: "FOREIGNER",
-      registrationId,
-      applicantName: registration.name,
-      contact: registration.contact,
-      statusCode: 200,
-      ipAddress,
-      userAgent,
-      metadata: { paypalOrderId: order.id },
-    });
-
-    return res.json({ orderId: order.id });
-  } catch (error) {
-    await serverLog({
-      event: "payment.create_order.failure",
-      category: "PAYMENT",
-      status: "FAILURE",
-      registrationType: "FOREIGNER",
-      registrationId,
-      errorMessage: error.message,
-      statusCode: 500,
-      ipAddress,
-      userAgent,
-    });
-    return res.status(500).json({ error: error.message });
-  }
-});
-
-app.post("/api/payment/capture", async (req, res) => {
-  const { ipAddress, userAgent } = getRequestMeta(req);
-  const { orderId, registrationId } = req.body || {};
-
-  await serverLog({
-    event: "payment.capture.attempt",
-    category: "PAYMENT",
-    status: "ATTEMPT",
-    registrationType: "FOREIGNER",
-    registrationId,
-    ipAddress,
-    userAgent,
-    metadata: { orderId },
-  });
-
-  if (!orderId || !registrationId) {
-    return res
-      .status(400)
-      .json({ error: "Order ID and registration ID are required." });
-  }
-
-  try {
-    const result = await pool.query(
-      "SELECT * FROM registrations WHERE id = $1",
-      [registrationId],
-    );
-    const registration = result.rows[0];
-
-    if (!registration || registration.type !== "FOREIGNER") {
-      return res.status(404).json({ error: "Registration not found." });
-    }
-
-    if (registration.payment_status === "PAID") {
-      return res.json({ success: true, alreadyPaid: true });
-    }
-
-    const capture = await capturePayPalOrder(orderId);
-    const captureId =
-      capture.purchase_units?.[0]?.payments?.captures?.[0]?.id || null;
-
-    await pool.query(
-      `UPDATE registrations SET
-        payment_status = 'PAID',
-        paypal_order_id = $1,
-        paypal_capture_id = $2,
-        updated_at = NOW()
-      WHERE id = $3`,
-      [orderId, captureId, registrationId],
-    );
-
-    await serverLog({
-      event: "payment.capture.success",
-      category: "PAYMENT",
-      status: "SUCCESS",
-      registrationType: "FOREIGNER",
-      registrationId,
-      applicantName: registration.name,
-      contact: registration.contact,
-      statusCode: 200,
-      ipAddress,
-      userAgent,
-      metadata: { orderId, paypalCaptureId: captureId },
-    });
-
-    return res.json({ success: true });
-  } catch (error) {
-    await pool.query(
-      "UPDATE registrations SET payment_status = 'FAILED', updated_at = NOW() WHERE id = $1",
-      [registrationId],
-    );
-    await serverLog({
-      event: "payment.capture.failure",
-      category: "PAYMENT",
-      status: "FAILURE",
-      registrationType: "FOREIGNER",
-      registrationId,
-      errorMessage: error.message,
-      statusCode: 500,
-      ipAddress,
-      userAgent,
-      metadata: { orderId },
-    });
-    return res.status(500).json({ error: error.message });
   }
 });
 
@@ -1099,9 +907,11 @@ app.put("/api/mypage/me", async (req, res) => {
         arrival_datetime: arrivalDatetime,
         departure_datetime: departureDatetime,
         arrival_flight_number:
-          body.arrivalFlightNumber ?? registration.arrival_flight_number,
+          String(body.arrivalFlightNumber ?? registration.arrival_flight_number ?? "").trim() ||
+          null,
         departure_flight_number:
-          body.departureFlightNumber ?? registration.departure_flight_number,
+          String(body.departureFlightNumber ?? registration.departure_flight_number ?? "").trim() ||
+          null,
         transportation_options:
           body.transportationOptions ?? registration.transportation_options,
         accommodation_type: body.accommodationType ?? registration.accommodation_type,

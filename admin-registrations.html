@@ -49,13 +49,6 @@
           <option value="DOMESTIC">내국인</option>
           <option value="FOREIGNER">외국인</option>
         </select>
-        <select id="paymentFilter">
-          <option value="">전체 결제</option>
-          <option value="NOT_REQUIRED">결제 없음</option>
-          <option value="PENDING">결제 대기</option>
-          <option value="PAID">결제 완료</option>
-          <option value="FAILED">결제 실패</option>
-        </select>
         <input type="search" id="searchInput" placeholder="이름, 이메일, 소속 검색" class="admin-search">
         <button type="button" class="btn btn-secondary" id="refreshBtn">새로고침</button>
         <button type="button" class="btn btn-secondary" id="exportBtn">CSV 다운로드</button>
@@ -71,7 +64,6 @@
               <th>연락처</th>
               <th>이메일</th>
               <th>참석일</th>
-              <th>결제</th>
             </tr>
           </thead>
           <tbody id="regTableBody"></tbody>
@@ -100,13 +92,6 @@
       GOVERNMENT: "정부 및 공공기관",
       IT_EDU_CORP: "IT/교육 기업",
       OTHER: "기타",
-    };
-
-    const PAYMENT_LABELS = {
-      NOT_REQUIRED: "해당 없음",
-      PENDING: "결제 대기",
-      PAID: "결제 완료",
-      FAILED: "결제 실패",
     };
 
     const DIETARY_LABELS = {
@@ -148,21 +133,12 @@
         .join(", ");
     }
 
-    function paymentBadgeClass(status) {
-      if (status === "PAID") return "success";
-      if (status === "PENDING") return "attempt";
-      if (status === "FAILED") return "failure";
-      return "";
-    }
-
     function getFilteredRegistrations() {
       const type = document.getElementById("typeFilter").value;
-      const payment = document.getElementById("paymentFilter").value;
       const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
 
       return allRegistrations.filter((row) => {
         if (type && row.type !== type) return false;
-        if (payment && row.paymentStatus !== payment) return false;
         if (!keyword) return true;
         const haystack = [
           row.name,
@@ -182,13 +158,11 @@
     function renderSummary(rows) {
       const domestic = rows.filter((r) => r.type === "DOMESTIC").length;
       const foreigner = rows.filter((r) => r.type === "FOREIGNER").length;
-      const paid = rows.filter((r) => r.paymentStatus === "PAID").length;
 
       document.getElementById("summaryGrid").innerHTML = `
         <div class="summary-card"><p>전체 신청</p><strong>${rows.length}</strong></div>
         <div class="summary-card"><p>내국인</p><strong>${domestic}</strong></div>
         <div class="summary-card"><p>외국인</p><strong>${foreigner}</strong></div>
-        <div class="summary-card success"><p>결제 완료</p><strong>${paid}</strong></div>
       `;
     }
 
@@ -214,7 +188,6 @@
           <td>${escapeHtml(row.contact) || "-"}</td>
           <td>${escapeHtml(row.email) || "-"}</td>
           <td>${formatAttendanceDates(row.attendanceDates)}</td>
-          <td><span class="badge ${paymentBadgeClass(row.paymentStatus)}">${PAYMENT_LABELS[row.paymentStatus] || row.paymentStatus}</span></td>
         </tr>
       `,
         )
@@ -284,8 +257,6 @@
             ? `${DIETARY_LABELS[row.dietaryPreference] || row.dietaryPreference}${row.dietaryDetails ? ` (${row.dietaryDetails})` : ""}`
             : row.dietary,
         ),
-        detailRow("결제 상태", PAYMENT_LABELS[row.paymentStatus] || row.paymentStatus),
-        detailRow("결제 금액", row.amount ? `${row.amount} ${row.currency}` : ""),
         detailRow(
           "호텔 양식",
           row.hasHotelForm
@@ -367,7 +338,6 @@
         "연락처",
         "이메일",
         "참석일",
-        "결제상태",
         "서류발급요청",
         "서류요청기타",
         "호텔양식",
@@ -385,7 +355,6 @@
             row.contact,
             row.email,
             formatAttendanceDates(row.attendanceDates),
-            PAYMENT_LABELS[row.paymentStatus] || row.paymentStatus,
             (row.documentRequests || [])
               .map((item) => DOCUMENT_REQUEST_LABELS[item] || item)
               .join("; "),
@@ -423,7 +392,6 @@
     document.getElementById("refreshBtn").addEventListener("click", loadRegistrations);
     document.getElementById("exportBtn").addEventListener("click", downloadCsv);
     document.getElementById("typeFilter").addEventListener("change", renderDashboard);
-    document.getElementById("paymentFilter").addEventListener("change", renderDashboard);
     document.getElementById("searchInput").addEventListener("input", renderDashboard);
     document.getElementById("detailClose").addEventListener("click", closeDetail);
     document.getElementById("detailBackdrop").addEventListener("click", closeDetail);
