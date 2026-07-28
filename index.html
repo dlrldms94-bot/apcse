@@ -19,7 +19,7 @@
 
     <div class="home-choice-panel">
       <div class="home-choice-grid">
-        <a href="register-domestic.html" class="home-choice primary">
+        <a href="#" class="home-choice primary" id="domesticChoice" role="button">
           내국인 사전 등록
           <small>Domestic Pre-Registration</small>
         </a>
@@ -41,5 +41,35 @@
       <span>메인으로 돌아가기</span>
     </a>
   </footer>
+
+  <div id="domesticNotice" class="home-notice" hidden>
+    <div class="home-notice-backdrop" id="domesticNoticeBackdrop"></div>
+    <div class="home-notice-panel" role="dialog" aria-labelledby="domesticNoticeTitle">
+      <p id="domesticNoticeTitle" class="home-notice-text">내국인 사전 등록은 8월 중 오픈 예정입니다.</p>
+      <button type="button" class="home-notice-btn" id="domesticNoticeClose">확인</button>
+    </div>
+  </div>
+
+  <script>
+    const domesticNotice = document.getElementById("domesticNotice");
+    const showDomesticNotice = () => {
+      domesticNotice.hidden = false;
+    };
+    const hideDomesticNotice = () => {
+      domesticNotice.hidden = true;
+    };
+
+    document.getElementById("domesticChoice").addEventListener("click", (e) => {
+      e.preventDefault();
+      showDomesticNotice();
+    });
+    document.getElementById("domesticNoticeClose").addEventListener("click", hideDomesticNotice);
+    document.getElementById("domesticNoticeBackdrop").addEventListener("click", hideDomesticNotice);
+
+    if (new URLSearchParams(location.search).get("domestic") === "closed") {
+      showDomesticNotice();
+      history.replaceState(null, "", "index.html");
+    }
+  </script>
 </body>
 </html>
