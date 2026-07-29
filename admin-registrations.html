@@ -142,8 +142,11 @@
         if (!keyword) return true;
         const haystack = [
           row.name,
+          row.nameEn,
           row.email,
           row.affiliation,
+          row.affiliationEn,
+          row.titleEn,
           row.contact,
           row.givenName,
           row.familyName,
@@ -335,43 +338,115 @@
       renderDashboard();
     }
 
+    function formatAffiliationType(row) {
+      if (!row.affiliationType) return "";
+      const label = AFFILIATION_LABELS[row.affiliationType] || row.affiliationType;
+      return row.affiliationTypeOther ? `${label} (${row.affiliationTypeOther})` : label;
+    }
+
+    function formatDietary(row) {
+      if (row.dietaryPreference) {
+        const label = DIETARY_LABELS[row.dietaryPreference] || row.dietaryPreference;
+        return row.dietaryDetails ? `${label} (${row.dietaryDetails})` : label;
+      }
+      return row.dietary || "";
+    }
+
+    function formatTeacherDocument(row) {
+      if (row.type !== "DOMESTIC") return "";
+      if (row.teacherDocumentNeeded === true) return "필요";
+      if (row.teacherDocumentNeeded === false) return "불필요";
+      return "";
+    }
+
+    function formatAccommodation(row) {
+      if (row.accommodationType === "ORGANIZER") return "주최 측 예약";
+      if (row.accommodationType === "OWN") return "개별 예약";
+      return "";
+    }
+
+    function formatDocumentRequests(row) {
+      return (row.documentRequests || [])
+        .map((item) => DOCUMENT_REQUEST_LABELS[item] || item)
+        .join("; ");
+    }
+
+    function registrationToCsvRow(row) {
+      return [
+        formatDate(row.createdAt),
+        row.type === "DOMESTIC" ? "내국인" : "외국인",
+        row.name,
+        row.nameEn || "",
+        row.givenName || "",
+        row.familyName || "",
+        row.preferredName || "",
+        row.title === "-" ? "" : row.title || "",
+        row.titleEn || "",
+        row.affiliation === "-" ? "" : row.affiliation || "",
+        row.affiliationEn || "",
+        formatAffiliationType(row),
+        row.affiliationTypeOther || "",
+        row.contact || "",
+        row.email || "",
+        row.whatsappId || "",
+        formatAttendanceDates(row.attendanceDates),
+        formatTeacherDocument(row),
+        formatDocumentRequests(row),
+        row.documentRequestUrgent ? "Y" : "",
+        row.documentRequestOther || "",
+        row.arrivalDatetime || "",
+        row.arrivalFlightNumber || "",
+        row.departureDatetime || "",
+        row.departureFlightNumber || "",
+        (row.transportationOptions || []).join("; "),
+        formatAccommodation(row),
+        formatDietary(row),
+        row.hasHotelForm ? row.hotelFormFilename || "Y" : "",
+        row.hasPassportCopy ? row.passportCopyFilename || "Y" : "",
+        row.id,
+      ];
+    }
+
+    const CSV_HEADERS = [
+      "신청일",
+      "구분",
+      "이름",
+      "영문명",
+      "Given Name",
+      "Family Name",
+      "배지 이름",
+      "직함/직책",
+      "직함/직책(영문)",
+      "소속",
+      "소속(영문)",
+      "소속 유형",
+      "소속 유형 기타",
+      "연락처",
+      "이메일",
+      "WhatsApp",
+      "참석일",
+      "교사 출장 공문",
+      "서류발급요청",
+      "긴급(Urgent)",
+      "서류요청기타",
+      "입국(KST)",
+      "입국 항공편",
+      "출국(KST)",
+      "출국 항공편",
+      "교통 지원",
+      "숙박",
+      "식단",
+      "호텔양식",
+      "여권사본",
+      "등록ID",
+    ];
+
     function downloadCsv() {
       const rows = getFilteredRegistrations();
-      const headers = [
-        "신청일",
-        "구분",
-        "이름",
-        "소속",
-        "연락처",
-        "이메일",
-        "참석일",
-        "서류발급요청",
-        "긴급(Urgent)",
-        "서류요청기타",
-        "호텔양식",
-        "여권사본",
-        "등록ID",
-      ];
       const csvRows = [
-        headers.join(","),
+        CSV_HEADERS.join(","),
         ...rows.map((row) =>
-          [
-            formatDate(row.createdAt),
-            row.type === "DOMESTIC" ? "내국인" : "외국인",
-            row.name,
-            row.affiliation === "-" ? "" : row.affiliation,
-            row.contact,
-            row.email,
-            formatAttendanceDates(row.attendanceDates),
-            (row.documentRequests || [])
-              .map((item) => DOCUMENT_REQUEST_LABELS[item] || item)
-              .join("; "),
-            row.documentRequestUrgent ? "Y" : "",
-            row.documentRequestOther || "",
-            row.hasHotelForm ? row.hotelFormFilename || "Y" : "",
-            row.hasPassportCopy ? row.passportCopyFilename || "Y" : "",
-            row.id,
-          ]
+          registrationToCsvRow(row)
             .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
             .join(","),
         ),
