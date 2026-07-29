@@ -151,8 +151,11 @@ function serializeRegistration(row) {
     id: row.id,
     type: row.type,
     name: row.name,
+    nameEn: row.name_en,
     title: row.title,
+    titleEn: row.title_en,
     affiliation: row.affiliation,
+    affiliationEn: row.affiliation_en,
     contact: row.contact,
     email: row.email,
     affiliationType: row.affiliation_type,
@@ -186,6 +189,7 @@ function serializeRegistration(row) {
     specialRequests: row.special_requests,
     documentRequests: row.document_requests || [],
     documentRequestOther: row.document_request_other,
+    documentRequestUrgent: Boolean(row.document_request_urgent),
     hasHotelForm: Boolean(row.hotel_form_filename),
     hotelFormFilename: row.hotel_form_filename,
     hasPassportCopy: Boolean(row.passport_copy_filename),
@@ -247,6 +251,11 @@ app.get("/api/health", (req, res) => {
   res.json({ ok: true, build: BUILD_VERSION });
 });
 
+function trimOptionalText(value) {
+  const trimmed = String(value ?? "").trim();
+  return trimmed || null;
+}
+
 app.post("/api/register/domestic", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
@@ -275,6 +284,9 @@ app.post("/api/register/domestic", async (req, res) => {
     teacherDocumentNeeded,
     privacyConsent,
     password,
+    nameEn,
+    affiliationEn,
+    titleEn,
   } = body;
 
   if (
@@ -371,16 +383,19 @@ app.post("/api/register/domestic", async (req, res) => {
     const passwordHash = await hashPassword(password);
     const result = await pool.query(
       `INSERT INTO registrations (
-        type, name, title, affiliation, contact, email, privacy_consent, password_hash,
+        type, name, name_en, title, title_en, affiliation, affiliation_en, contact, email, privacy_consent, password_hash,
         affiliation_type, affiliation_type_other, attendance_dates, teacher_document_needed,
         payment_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'NOT_REQUIRED')
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'NOT_REQUIRED')
       RETURNING *`,
       [
         "DOMESTIC",
         name,
+        trimOptionalText(nameEn),
         title,
+        trimOptionalText(titleEn),
         affiliation,
+        trimOptionalText(affiliationEn),
         phone,
         email,
         true,
@@ -473,6 +488,8 @@ app.post(
   const documentRequests = parseJsonArray(body.documentRequests);
   const documentRequestOther = String(body.documentRequestOther || "").trim() || null;
   const visaSupportNeeded = documentRequests.includes("VISA_SUPPORT");
+  const documentRequestUrgent =
+    visaSupportNeeded && parseBoolean(body.documentRequestUrgent);
   const privacyConsent = parseBoolean(body.privacyConsent);
   const hotelFormFile = req.files?.hotelForm?.[0];
   const passportCopyFile = req.files?.passportCopy?.[0];
@@ -602,11 +619,11 @@ app.post(
         arrival_flight_number, departure_flight_number, transportation_options,
         accommodation_type, check_in_date, check_out_date, dietary_preference, dietary_details,
         hotel_form_filename, hotel_form_mimetype, hotel_form_data,
-        document_requests, document_request_other,
+        document_requests, document_request_other, document_request_urgent,
         passport_copy_filename, passport_copy_mimetype, passport_copy_data,
         payment_status, amount, currency
       ) VALUES (
-        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,'NOT_REQUIRED',NULL,NULL
+        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,'NOT_REQUIRED',NULL,NULL
       ) RETURNING *`,
       [
         fullName,
@@ -636,6 +653,7 @@ app.post(
         accommodationType === "ORGANIZER" ? hotelFormFile.buffer : null,
         documentRequests.length ? documentRequests : null,
         documentRequestOther,
+        documentRequestUrgent,
         visaSupportNeeded ? passportCopyFile.originalname : null,
         visaSupportNeeded ? passportCopyFile.mimetype : null,
         visaSupportNeeded ? passportCopyFile.buffer : null,
@@ -847,6 +865,13 @@ app.put("/api/mypage/me", async (req, res) => {
     const fields = {
       title: body.title ?? registration.title,
       affiliation: body.affiliation ?? registration.affiliation,
+      name_en: body.nameEn !== undefined ? trimOptionalText(body.nameEn) : registration.name_en,
+      affiliation_en:
+        body.affiliationEn !== undefined
+          ? trimOptionalText(body.affiliationEn)
+          : registration.affiliation_en,
+      title_en:
+        body.titleEn !== undefined ? trimOptionalText(body.titleEn) : registration.title_en,
       contact: body.contact ?? body.phone ?? registration.contact,
       email: body.email ?? registration.email,
       privacy_consent: body.privacyConsent ?? registration.privacy_consent,
@@ -877,7 +902,21 @@ app.put("/api/mypage/me", async (req, res) => {
         : null;
       if (registration.type === "FOREIGNER") {
         fields.visa_support_needed = body.documentRequests.includes("VISA_SUPPORT");
+        fields.document_request_urgent =
+          body.documentRequests.includes("VISA_SUPPORT") &&
+          parseBoolean(body.documentRequestUrgent);
       }
+    }
+
+    if (
+      registration.type === "FOREIGNER" &&
+      body.documentRequestUrgent !== undefined &&
+      body.documentRequests === undefined
+    ) {
+      const hasVisa =
+        Array.isArray(registration.document_requests) &&
+        registration.document_requests.includes("VISA_SUPPORT");
+      fields.document_request_urgent = hasVisa && parseBoolean(body.documentRequestUrgent);
     }
 
     if (registration.type === "FOREIGNER") {
@@ -948,8 +987,10 @@ app.put("/api/mypage/me", async (req, res) => {
         accommodation_type = $22, check_in_date = $23, check_out_date = $24,
         dietary_preference = $25, dietary_details = $26, password_hash = $27,
         document_requests = $28, document_request_other = $29,
+        document_request_urgent = $30,
+        name_en = $31, affiliation_en = $32, title_en = $33,
         updated_at = NOW()
-      WHERE id = $30
+      WHERE id = $34
       RETURNING *`,
       [
         registration.type === "FOREIGNER" ? fields.name : registration.name,
@@ -981,6 +1022,10 @@ app.put("/api/mypage/me", async (req, res) => {
         passwordHash,
         fields.document_requests ?? registration.document_requests,
         fields.document_request_other ?? registration.document_request_other,
+        fields.document_request_urgent ?? registration.document_request_urgent,
+        fields.name_en ?? registration.name_en,
+        fields.affiliation_en ?? registration.affiliation_en,
+        fields.title_en ?? registration.title_en,
         sessionId,
       ],
     );

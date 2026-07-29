@@ -133,3 +133,17 @@ body {
   background: #eff6ff;
   color: #1d4ed8;
 }
+
+.complete-home-actions {
+  justify-content: flex-start;
+  margin-top: 32px;
+  padding-top: 8px;
+}
+
+.complete-home-actions .btn {
+  width: 120px;
+  min-width: 120px;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-size: 15px;
+}

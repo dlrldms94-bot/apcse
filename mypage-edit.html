@@ -107,7 +107,10 @@
       }).join("");
 
       return `
-        ${field("소속 기관명", "affiliation", data.affiliation, { required: true })}
+        <div class="form-row-2">
+          ${field("소속 기관명", "affiliation", data.affiliation, { required: true })}
+          ${field("소속 기관명 (영문)", "affiliationEn", data.affiliationEn)}
+        </div>
         <div class="field">
           <label>소속 유형</label>
           <div class="radio-group">${affiliationOptions}</div>
@@ -235,6 +238,13 @@
           <input type="file" id="passportCopyUpload" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf">
           <p class="hint">${data.hasPassportCopy ? `Uploaded: ${data.passportCopyFilename} <a href="/api/mypage/files/passport-copy" target="_blank">Download</a>` : "Upload a scanned copy of your passport (PDF or image)."}</p>
           <p class="hint">For Invitation Letter or Certificate of Participation only, passport copy upload is not required.</p>
+          <div id="documentUrgentBlock" style="margin-top: 12px;">
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequestUrgent" value="true" ${data.documentRequestUrgent ? "checked" : ""}>
+              Urgent
+            </label>
+            <p class="hint">Check if you urgently need visa-related documents such as an invitation letter.</p>
+          </div>
         </div>
       `;
     }
@@ -242,6 +252,7 @@
     function bindDocumentRequestInteractions() {
       const otherInput = form.querySelector('[name="documentRequestOther"]');
       const passportBlock = document.getElementById("passportUploadBlock");
+      const urgentCheckbox = form.querySelector('[name="documentRequestUrgent"]');
 
       function refreshDocumentBlocks() {
         const selected = [...form.querySelectorAll('input[name="documentRequests"]:checked')].map((el) => el.value);
@@ -251,6 +262,9 @@
         }
         if (passportBlock) {
           passportBlock.hidden = !selected.includes("VISA_SUPPORT");
+        }
+        if (urgentCheckbox && !selected.includes("VISA_SUPPORT")) {
+          urgentCheckbox.checked = false;
         }
       }
 
@@ -297,8 +311,14 @@
       statusBox.hidden = false;
 
       form.innerHTML = `
-        ${field("이름 / Name", "name", data.name, { disabled: true })}
-        ${!isForeigner ? field("직함 / 직책", "title", data.title, { required: true }) : ""}
+        <div class="form-row-2">
+          ${field("이름 (한글)", "name", data.name, { disabled: true })}
+          ${field("영문명", "nameEn", data.nameEn)}
+        </div>
+        ${!isForeigner ? `<div class="form-row-2">
+          ${field("직함 / 직책", "title", data.title, { required: true })}
+          ${field("직함 / 직책 (영문)", "titleEn", data.titleEn)}
+        </div>` : ""}
         ${!isForeigner ? renderDomesticFields(data) : renderForeignerFields(data)}
         ${!isForeigner ? renderDocumentRequestFields(data) : ""}
         ${field("새 비밀번호", "password", "", { type: "password", placeholder: "4~8자리 숫자/영문" })}
@@ -383,6 +403,9 @@
         Object.assign(payload, {
           title: formData.title,
           affiliation: formData.affiliation,
+          nameEn: formData.nameEn,
+          affiliationEn: formData.affiliationEn,
+          titleEn: formData.titleEn,
           phone: formData.phone,
           email: formData.email,
           affiliationType: formData.affiliationType,
@@ -424,6 +447,9 @@
             formData.dietaryPreference === "VEGETARIAN" || formData.dietaryPreference === "OTHER"
               ? formData.dietaryDetails
               : null,
+          documentRequestUrgent:
+            documentRequests.includes("VISA_SUPPORT") &&
+            Boolean(form.querySelector('[name="documentRequestUrgent"]')?.checked),
         });
       }
 

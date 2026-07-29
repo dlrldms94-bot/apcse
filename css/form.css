@@ -97,6 +97,7 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .btn-primary {

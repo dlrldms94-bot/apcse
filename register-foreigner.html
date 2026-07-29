@@ -20,7 +20,8 @@
 
     <div class="notice-box" style="margin-bottom: 24px;">
       <p>Welcome to APCSE 2026. Please fill out the form below to complete your pre-registration.</p>
-      <p>※ Please note that detailed session bookings for limited-seat programs (such as AI education workshops) will be opened through a separate announcement with an application link sent to registered participants in September.</p>
+      <p>* This event is intended for computer science education teachers, researchers in education and computer science, and professionals from related organizations. To ensure the smooth operation of the conference, registration may be restricted to participants within the intended audience. We appreciate your understanding.</p>
+      <p>* Due to limited seating capacity, advance registration may close early once the maximum number of participants has been reached.</p>
     </div>
 
     <div class="card">
@@ -126,6 +127,13 @@
               <label>Passport Copy Upload <span class="req">*</span></label>
               <input type="file" name="passportCopy" id="passportCopy" accept=".pdf,.jpg,.jpeg,.png,image/jpeg,image/png,application/pdf">
               <p class="hint">Upload a scanned copy of your passport (PDF or image). Required when Visa Support Letter is selected.</p>
+            </div>
+            <div class="field" id="documentUrgentBlock" style="margin-top: 12px; margin-bottom: 0;">
+              <label class="checkbox-row">
+                <input type="checkbox" name="documentRequestUrgent" id="documentRequestUrgent" value="true">
+                Urgent
+              </label>
+              <p class="hint">Check if you urgently need visa-related documents such as an invitation letter.</p>
             </div>
           </div>
           <p class="hint">Passport copy upload is not required for Invitation Letter or Certificate of Participation only.</p>
@@ -265,6 +273,7 @@
     const documentRequestOther = document.getElementById("documentRequestOther");
     const passportUploadBlock = document.getElementById("passportUploadBlock");
     const passportCopy = document.getElementById("passportCopy");
+    const documentRequestUrgent = document.getElementById("documentRequestUrgent");
     const accommodationOrganizer = document.getElementById("accommodationOrganizer");
     const accommodationOwn = document.getElementById("accommodationOwn");
     const accommodationDates = document.getElementById("accommodationDates");
@@ -287,7 +296,12 @@
       if (!selected.includes("OTHER")) documentRequestOther.value = "";
       passportUploadBlock.hidden = !needsVisaSupport;
       passportCopy.required = needsVisaSupport;
-      if (!needsVisaSupport) passportCopy.value = "";
+      if (!needsVisaSupport) {
+        passportCopy.value = "";
+        if (documentRequestUrgent) {
+          documentRequestUrgent.checked = false;
+        }
+      }
     }
 
     form.querySelectorAll('input[name="documentRequests"]').forEach((checkbox) => {
@@ -442,6 +456,12 @@
         payload.append("attendanceDates", JSON.stringify(attendanceDates));
         payload.append("documentRequests", JSON.stringify(documentRequests));
         payload.append("documentRequestOther", data.documentRequestOther?.trim() || "");
+        payload.append(
+          "documentRequestUrgent",
+          documentRequests.includes("VISA_SUPPORT") && documentRequestUrgent?.checked
+            ? "true"
+            : "false",
+        );
         payload.append("arrivalDatetime", buildDatetime(data.arrivalDate, data.arrivalTime));
         payload.append("departureDatetime", buildDatetime(data.departureDate, data.departureTime));
         payload.append("arrivalFlightNumber", data.arrivalFlightNumber?.trim() || "");
@@ -467,7 +487,7 @@
         if (!res.ok) {
           throw new Error(result.error || "Registration failed.");
         }
-        location.href = `register-complete.html?type=foreigner&id=${result.id}`;
+        location.href = "register-complete.html?type=foreigner";
       } catch (error) {
         errorBox.textContent = error.message;
         errorBox.hidden = false;

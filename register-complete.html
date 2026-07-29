@@ -6,6 +6,7 @@
   <title>등록 완료 | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
 </head>
 <body>
   <header class="site-header">
@@ -20,40 +21,38 @@
 
   <main class="page">
     <h1 class="page-title" id="title">사전등록 완료</h1>
-    <p class="page-desc" id="desc">사전등록이 정상적으로 완료되었습니다.</p>
 
     <div class="card">
-      <p id="registrationInfo"></p>
-      <p id="guideText" style="margin-top:16px;color:#475569;"></p>
-      <div class="actions" style="margin-top:24px;">
-        <a href="mypage.html" class="btn btn-primary" id="mypageBtn">마이페이지로 이동</a>
-        <a href="index.html" class="btn btn-secondary" id="homeBtn">홈으로</a>
+      <p class="page-desc" id="desc" style="text-align:left;margin-bottom:16px;"></p>
+      <div id="bodyText" style="color:#475569;line-height:1.7;text-align:left;"></div>
+      <div class="actions complete-home-actions">
+        <a href="index.html" class="btn btn-primary" id="homeBtn">홈으로</a>
       </div>
     </div>
   </main>
 
   <script>
     const params = new URLSearchParams(location.search);
-    const type = params.get("type");
-    const id = params.get("id");
-    const isForeigner = type === "foreigner";
+    const isForeigner = params.get("type") === "foreigner";
 
     if (isForeigner) {
       document.documentElement.lang = "en";
+      document.title = "Registration Complete | APCSE";
       document.getElementById("title").textContent = "Registration Complete";
-      document.getElementById("desc").textContent = "Your pre-registration has been completed.";
-      document.getElementById("guideText").textContent =
-        "You can view and edit your information on My Page using your name and password.";
-      document.getElementById("mypageBtn").textContent = "Go to My Page";
+      document.getElementById("desc").textContent =
+        "Your pre-registration has been successfully submitted. Thank you for registering for APCSE 2026.";
+      document.getElementById("bodyText").innerHTML = `
+        <p>Your registration information will be reviewed in the order received. Once the review is complete, you will be notified of your registration status via your registered email address.</p>
+        <p style="margin-top:16px;">Please note that your registration will only be confirmed upon receipt of a confirmation email.</p>
+      `;
       document.getElementById("homeBtn").textContent = "Home";
     } else {
-      document.getElementById("guideText").textContent =
-        "마이페이지에서 이름과 비밀번호로 등록 정보를 확인·수정할 수 있습니다.";
-    }
-
-    if (id) {
-      document.getElementById("registrationInfo").innerHTML =
-        `${isForeigner ? "Registration ID" : "등록 번호"}: <strong>${id}</strong>`;
+      document.getElementById("desc").textContent =
+        "사전등록이 정상적으로 접수되었습니다. 신청해 주셔서 감사합니다.";
+      document.getElementById("bodyText").innerHTML = `
+        <p>제출하신 참석 정보를 순차적으로 확인한 후, 참가 확정 여부를 등록하신 이메일로 안내드리겠습니다.</p>
+        <p style="margin-top:16px;">참가 확정 안내를 받기 전까지는 등록이 완료된 상태가 아니므로 참고 부탁드립니다.</p>
+      `;
     }
   </script>
 </body>

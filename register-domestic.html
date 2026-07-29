@@ -8,9 +8,6 @@
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/form.css">
-  <script>
-    location.replace("index.html?domestic=closed");
-  </script>
 </head>
 <body>
   <header class="home-header">
@@ -20,12 +17,11 @@
 
   <main class="page">
     <h1 class="page-title">내국인 사전등록</h1>
-    <p class="page-desc">아래 안내를 확인하신 후 정보를 입력하고 신청해 주세요.</p>
 
     <div class="notice-box" style="margin-bottom: 24px;">
-      <p class="notice-title">행사 일정 안내</p>
-      <p>본 컨퍼런스는 10월 14일(수)부터 16일(금)까지 개최되나, 첫째 날(14일)은 해외 참가자 대상의 프로그램으로 운영됩니다. 국내 참가자분들을 위한 메인 컨퍼런스, 패널 토론 및 AI 교육 워크숍은 10월 15일(목) ~ 16일(금) 양일간 진행되오니 일정에 참고해 주시기 바랍니다.</p>
-      <p>※ 세부 프로그램(AI 교육 워크숍 등 인원 제한 세션)에 대한 선착순 참여 신청 및 수요조사는 9월 중 사전등록자 분들을 대상으로 별도 안내(이메일/문자)될 예정입니다.</p>
+      <p>APCSE 2026에 오신 것을 환영합니다. 사전 등록을 완료하려면 아래 양식을 작성해 주세요.</p>
+      <p>* 본 행사는 컴퓨터과학 교육 교사, 교육 및 컴퓨터과학 분야 연구자, 유관기관 담당자 등을 대상으로 진행됩니다. 행사의 원활한 운영을 위해 대상에 해당하지 않는 경우에는 참석이 제한될 수 있는 점 너른 양해 부탁드립니다.</p>
+      <p>* 행사장 내 좌석이 한정되어 있어 사전등록이 조기 마감될 수 있습니다.</p>
     </div>
 
     <div class="card">
@@ -54,14 +50,26 @@
           <p class="hint">※ 동의하지 않으실 경우 사전등록 진행이 불가능하며, 행사 안내를 받으실 수 없습니다.</p>
         </div>
 
-        <div class="field">
-          <label>2. 이름 <span class="req">*</span></label>
-          <input type="text" name="name" required>
+        <div class="form-row-2">
+          <div class="field">
+            <label>2. 이름 <span class="req">*</span></label>
+            <input type="text" name="name" required>
+          </div>
+          <div class="field">
+            <label>영문명</label>
+            <input type="text" name="nameEn" placeholder="English name">
+          </div>
         </div>
 
-        <div class="field">
-          <label>3. 소속 기관명 <span class="req">*</span></label>
-          <input type="text" name="affiliation" placeholder="예: OO대학교, OO초등학교, OO연구소" required>
+        <div class="form-row-2">
+          <div class="field">
+            <label>3. 소속 기관명 <span class="req">*</span></label>
+            <input type="text" name="affiliation" placeholder="예: OO대학교, OO초등학교, OO연구소" required>
+          </div>
+          <div class="field">
+            <label>소속 기관명 (영문)</label>
+            <input type="text" name="affiliationEn" placeholder="Organization (English)">
+          </div>
         </div>
 
         <div class="field">
@@ -95,9 +103,15 @@
           <input type="text" name="affiliationTypeOther" id="affiliationTypeOther" class="inline-input" placeholder="기타 소속 유형을 입력해 주세요." hidden>
         </div>
 
-        <div class="field">
-          <label>5. 직함 / 직책 <span class="req">*</span></label>
-          <input type="text" name="title" placeholder="예: 교사, 교수, 연구원, 주임, 학생 등" required>
+        <div class="form-row-2">
+          <div class="field">
+            <label>5. 직함 / 직책 <span class="req">*</span></label>
+            <input type="text" name="title" placeholder="예: 교사, 교수, 연구원, 주임, 학생 등" required>
+          </div>
+          <div class="field">
+            <label>직함 / 직책 (영문)</label>
+            <input type="text" name="titleEn" placeholder="Job title (English)">
+          </div>
         </div>
 
         <div class="field">
@@ -255,10 +269,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: data.name.trim(),
+            nameEn: data.nameEn?.trim() || "",
             affiliation: data.affiliation.trim(),
+            affiliationEn: data.affiliationEn?.trim() || "",
             affiliationType: data.affiliationType,
             affiliationTypeOther: data.affiliationType === "OTHER" ? data.affiliationTypeOther.trim() : null,
             title: data.title.trim(),
+            titleEn: data.titleEn?.trim() || "",
             phone: data.phone.trim(),
             email,
             attendanceDates,
@@ -271,7 +288,7 @@
         if (!res.ok) {
           throw new Error(result.error || "등록에 실패했습니다.");
         }
-        location.href = `register-complete.html?type=domestic&id=${result.id}`;
+        location.href = "register-complete.html?type=domestic";
       } catch (error) {
         errorBox.textContent = error.message;
         errorBox.hidden = false;
