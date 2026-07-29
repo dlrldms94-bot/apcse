@@ -483,6 +483,10 @@ app.post(
     password,
   } = body;
 
+  const country = String(body.country || body.nationality || "").trim();
+  const affiliation = String(body.affiliation || "").trim();
+  const title = String(body.title || "").trim();
+
   const attendanceDates = parseJsonArray(body.attendanceDates);
   const transportationOptions = parseJsonArray(body.transportationOptions);
   const documentRequests = parseJsonArray(body.documentRequests);
@@ -500,6 +504,9 @@ app.post(
   if (
     !givenName ||
     !familyName ||
+    !country ||
+    !affiliation ||
+    !title ||
     !email ||
     !phone ||
     !whatsappId ||
@@ -613,7 +620,7 @@ app.post(
     const passwordHash = await hashPassword(password);
     const result = await pool.query(
       `INSERT INTO registrations (
-        type, name, title, affiliation, contact, email, privacy_consent, password_hash,
+        type, name, title, affiliation, nationality, contact, email, privacy_consent, password_hash,
         given_name, family_name, preferred_name, whatsapp_id, attendance_dates,
         visa_support_needed, passport_number, arrival_datetime, departure_datetime,
         arrival_flight_number, departure_flight_number, transportation_options,
@@ -623,10 +630,13 @@ app.post(
         passport_copy_filename, passport_copy_mimetype, passport_copy_data,
         payment_status, amount, currency
       ) VALUES (
-        'FOREIGNER',$1,'-','-',$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,'NOT_REQUIRED',NULL,NULL
+        'FOREIGNER',$1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,'NOT_REQUIRED',NULL,NULL
       ) RETURNING *`,
       [
         fullName,
+        title,
+        affiliation,
+        country,
         phone,
         email,
         true,
@@ -865,6 +875,12 @@ app.put("/api/mypage/me", async (req, res) => {
     const fields = {
       title: body.title ?? registration.title,
       affiliation: body.affiliation ?? registration.affiliation,
+      nationality:
+        body.country !== undefined
+          ? trimOptionalText(body.country)
+          : body.nationality !== undefined
+            ? trimOptionalText(body.nationality)
+            : registration.nationality,
       name_en: body.nameEn !== undefined ? trimOptionalText(body.nameEn) : registration.name_en,
       affiliation_en:
         body.affiliationEn !== undefined
@@ -978,24 +994,25 @@ app.put("/api/mypage/me", async (req, res) => {
 
     const result = await pool.query(
       `UPDATE registrations SET
-        name = $1, title = $2, affiliation = $3, contact = $4, email = $5, privacy_consent = $6,
-        affiliation_type = $7, affiliation_type_other = $8, attendance_dates = $9,
-        teacher_document_needed = $10,
-        given_name = $11, family_name = $12, preferred_name = $13, whatsapp_id = $14,
-        visa_support_needed = $15, passport_number = $16, arrival_datetime = $17, departure_datetime = $18,
-        arrival_flight_number = $19, departure_flight_number = $20, transportation_options = $21,
-        accommodation_type = $22, check_in_date = $23, check_out_date = $24,
-        dietary_preference = $25, dietary_details = $26, password_hash = $27,
-        document_requests = $28, document_request_other = $29,
-        document_request_urgent = $30,
-        name_en = $31, affiliation_en = $32, title_en = $33,
+        name = $1, title = $2, affiliation = $3, nationality = $4, contact = $5, email = $6, privacy_consent = $7,
+        affiliation_type = $8, affiliation_type_other = $9, attendance_dates = $10,
+        teacher_document_needed = $11,
+        given_name = $12, family_name = $13, preferred_name = $14, whatsapp_id = $15,
+        visa_support_needed = $16, passport_number = $17, arrival_datetime = $18, departure_datetime = $19,
+        arrival_flight_number = $20, departure_flight_number = $21, transportation_options = $22,
+        accommodation_type = $23, check_in_date = $24, check_out_date = $25,
+        dietary_preference = $26, dietary_details = $27, password_hash = $28,
+        document_requests = $29, document_request_other = $30,
+        document_request_urgent = $31,
+        name_en = $32, affiliation_en = $33, title_en = $34,
         updated_at = NOW()
-      WHERE id = $34
+      WHERE id = $35
       RETURNING *`,
       [
         registration.type === "FOREIGNER" ? fields.name : registration.name,
-        registration.type === "DOMESTIC" ? fields.title : registration.title,
-        registration.type === "DOMESTIC" ? fields.affiliation : registration.affiliation,
+        fields.title,
+        fields.affiliation,
+        fields.nationality,
         fields.contact,
         fields.email,
         fields.privacy_consent,

@@ -31,7 +31,7 @@
           <div class="privacy-details">
             <p>On&amp;Me Co., Ltd. (the "Organizer") collects and uses personal information as follows for APCSE pre-registration and event operations.</p>
             <ul>
-              <li><strong>Items collected:</strong> Name, contact information, participation dates, document request details, passport copy (when Visa Support Letter is requested), flight information, transportation/accommodation requests, hotel reservation form, dietary preferences, and My Page password</li>
+              <li><strong>Items collected:</strong> Name, country, organization, job title, contact information, participation dates, document request details, passport copy (when Visa Support Letter is requested), flight information, transportation/accommodation requests, hotel reservation form, dietary preferences, and My Page password</li>
               <li><strong>Purpose:</strong> Pre-registration, event guidance, document issuance, logistics coordination, and registration management</li>
               <li><strong>Retention period:</strong> Destroyed within 1 year after the event ends (unless otherwise required by law)</li>
               <li><strong>Right to refuse:</strong> You may refuse consent, but pre-registration and event guidance will not be available.</li>
@@ -58,6 +58,22 @@
           <div class="field">
             <label>Family Name (Last Name) <span class="req">*</span></label>
             <input type="text" name="familyName" required autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Country <span class="req">*</span></label>
+          <input type="text" name="country" required autocomplete="country-name" placeholder="e.g., United States, Japan">
+        </div>
+
+        <div class="form-row-2">
+          <div class="field">
+            <label>Organization / Affiliation <span class="req">*</span></label>
+            <input type="text" name="affiliation" required placeholder="e.g., University, School, Company">
+          </div>
+          <div class="field">
+            <label>Job Title / Position <span class="req">*</span></label>
+            <input type="text" name="title" required placeholder="e.g., Teacher, Professor, Researcher">
           </div>
         </div>
 
@@ -449,6 +465,9 @@
         const payload = new FormData();
         payload.append("givenName", data.givenName.trim());
         payload.append("familyName", data.familyName.trim());
+        payload.append("country", data.country.trim());
+        payload.append("affiliation", data.affiliation.trim());
+        payload.append("title", data.title.trim());
         payload.append("preferredName", data.preferredName?.trim() || "");
         payload.append("email", data.email.trim());
         payload.append("phone", data.phone.trim());

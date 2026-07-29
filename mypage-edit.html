@@ -153,6 +153,11 @@
           ${field("Given Name", "givenName", data.givenName, { required: true })}
           ${field("Family Name", "familyName", data.familyName, { required: true })}
         </div>
+        ${field("Country", "country", data.nationality, { required: true, placeholder: "e.g., United States" })}
+        <div class="form-row-2">
+          ${field("Organization / Affiliation", "affiliation", data.affiliation === "-" ? "" : data.affiliation, { required: true })}
+          ${field("Job Title / Position", "title", data.title === "-" ? "" : data.title, { required: true })}
+        </div>
         ${field("Preferred Name on Badge", "preferredName", data.preferredName)}
         ${field("E-mail Address", "email", data.email, { required: true, type: "email" })}
         ${field("Mobile Phone Number", "phone", data.contact, { required: true, placeholder: "+82 10-1234-5678" })}
@@ -433,6 +438,9 @@
         Object.assign(payload, {
           givenName: formData.givenName,
           familyName: formData.familyName,
+          country: formData.country,
+          affiliation: formData.affiliation,
+          title: formData.title,
           preferredName: formData.preferredName || null,
           phone: formData.phone,
           email: formData.email,
