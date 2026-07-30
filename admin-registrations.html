@@ -297,13 +297,15 @@
             alert("파일을 다운로드할 수 없습니다.");
             return;
           }
-          const blob = await res.blob();
+          const contentType = res.headers.get("content-type") || "application/octet-stream";
+          const buffer = await res.arrayBuffer();
+          const blob = new Blob([buffer], { type: contentType });
           const objectUrl = URL.createObjectURL(blob);
           const tempLink = document.createElement("a");
           tempLink.href = objectUrl;
           tempLink.download = link.dataset.filename || "download";
           tempLink.click();
-          URL.revokeObjectURL(objectUrl);
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
         });
       });
     }

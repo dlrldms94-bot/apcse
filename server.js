@@ -46,7 +46,15 @@ const PASSPORT_COPY_MIMES = new Set([
   "image/jpg",
 ]);
 const PASSPORT_COPY_EXTENSIONS = new Set([".pdf", ".jpg", ".jpeg", ".png"]);
-const BUILD_VERSION = "2026-07-16-regfix2";
+const EXTENSION_MIME_MAP = {
+  ".pdf": "application/pdf",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".doc": "application/msword",
+  ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+};
+const BUILD_VERSION = "2026-07-29-filedownload";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -87,6 +95,43 @@ function isAllowedUpload(file, allowedMimes, allowedExtensions) {
   return allowedExtensions.has(ext);
 }
 
+function resolveMimeType(filename, mimetype) {
+  const normalized = String(mimetype || "")
+    .split(";")[0]
+    .trim()
+    .toLowerCase();
+  if (normalized && normalized !== "application/octet-stream") {
+    return normalized;
+  }
+  const ext = path.extname(String(filename || "")).toLowerCase();
+  return EXTENSION_MIME_MAP[ext] || normalized || "application/octet-stream";
+}
+
+function uploadMime(file) {
+  return resolveMimeType(file.originalname, file.mimetype);
+}
+
+function storedFileToBuffer(data) {
+  if (!data) return null;
+  if (Buffer.isBuffer(data)) return data;
+  if (data instanceof Uint8Array) return Buffer.from(data);
+  if (typeof data === "string") {
+    if (data.startsWith("\\x")) {
+      return Buffer.from(data.slice(2), "hex");
+    }
+    return Buffer.from(data, "binary");
+  }
+  return Buffer.from(data);
+}
+
+function contentDispositionHeader(filename, inline) {
+  const safe = String(filename).replace(/[\r\n"]/g, "");
+  const asciiFallback = safe.replace(/[^\x20-\x7E]/g, "_") || "download";
+  const encoded = encodeURIComponent(safe);
+  const mode = inline ? "inline" : "attachment";
+  return `${mode}; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}
+
 function sendStoredFile(res, row, prefix) {
   if (!row) {
     return res.status(404).json({ error: "File not found." });
@@ -97,12 +142,17 @@ function sendStoredFile(res, row, prefix) {
   if (!filename || !data) {
     return res.status(404).json({ error: "File not found." });
   }
-  res.setHeader("Content-Type", mimetype || "application/octet-stream");
-  res.setHeader(
-    "Content-Disposition",
-    `attachment; filename="${filename.replace(/"/g, "")}"`,
-  );
-  return res.send(data);
+  const buffer = storedFileToBuffer(data);
+  if (!buffer || !buffer.length) {
+    return res.status(404).json({ error: "File not found." });
+  }
+  const contentType = resolveMimeType(filename, mimetype);
+  const inline =
+    contentType === "application/pdf" || contentType.startsWith("image/");
+  res.setHeader("Content-Type", contentType);
+  res.setHeader("Content-Disposition", contentDispositionHeader(filename, inline));
+  res.setHeader("Content-Length", buffer.length);
+  return res.end(buffer);
 }
 
 function sendHtmlPage(res, filename) {
@@ -659,13 +709,13 @@ app.post(
         dietaryPreference,
         dietaryDetails || null,
         accommodationType === "ORGANIZER" ? hotelFormFile.originalname : null,
-        accommodationType === "ORGANIZER" ? hotelFormFile.mimetype : null,
+        accommodationType === "ORGANIZER" ? uploadMime(hotelFormFile) : null,
         accommodationType === "ORGANIZER" ? hotelFormFile.buffer : null,
         documentRequests.length ? documentRequests : null,
         documentRequestOther,
         documentRequestUrgent,
         visaSupportNeeded ? passportCopyFile.originalname : null,
-        visaSupportNeeded ? passportCopyFile.mimetype : null,
+        visaSupportNeeded ? uploadMime(passportCopyFile) : null,
         visaSupportNeeded ? passportCopyFile.buffer : null,
       ],
     );
@@ -1095,7 +1145,7 @@ app.post("/api/mypage/upload/hotel-form", upload.single("hotelForm"), async (req
         hotel_form_data = $3,
         updated_at = NOW()
       WHERE id = $4`,
-      [req.file.originalname, req.file.mimetype, req.file.buffer, sessionId],
+      [req.file.originalname, uploadMime(req.file), req.file.buffer, sessionId],
     );
     return res.json({ success: true, filename: req.file.originalname });
   } catch {
@@ -1119,7 +1169,7 @@ app.post("/api/mypage/upload/passport-copy", upload.single("passportCopy"), asyn
         passport_copy_data = $3,
         updated_at = NOW()
       WHERE id = $4`,
-      [req.file.originalname, req.file.mimetype, req.file.buffer, sessionId],
+      [req.file.originalname, uploadMime(req.file), req.file.buffer, sessionId],
     );
     return res.json({ success: true, filename: req.file.originalname });
   } catch {
