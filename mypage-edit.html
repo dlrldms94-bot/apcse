@@ -63,6 +63,7 @@
       PARTICIPATION: "Certificate of Participation",
       VISA_SUPPORT: "Visa Support Letter",
       OTHER: "Other (please specify)",
+      NONE: "None",
     };
 
     function splitDatetime(datetime) {
@@ -197,7 +198,7 @@
           <p class="hint">Shuttle bus services will be available on October 13 (Incheon Airport → Hotel) and October 16 (Venue → Incheon Airport). Final operation details and schedules will be confirmed based on the pre-registration survey results and announced separately in September.</p>
         </div>
         <div class="field">
-          <label>Accommodation</label>
+          <label>Accommodation <span class="req">*</span></label>
           <div class="checkbox-group">
             <label class="checkbox-row"><input type="checkbox" name="accommodationOrganizer" id="accommodationOrganizer" ${data.accommodationType === "ORGANIZER" ? "checked" : ""}> Organizer hotel booking (At Your Own Expense)</label>
             <div id="accommodationDates" class="conditional-block" ${data.accommodationType === "ORGANIZER" ? "" : "hidden"}>
@@ -234,7 +235,7 @@
 
       return `
         <div class="field">
-          <label>Document Request</label>
+          <label>Document Request <span class="req">*</span></label>
           <div class="checkbox-group" id="documentRequestGroup">${checkboxes}</div>
           <input type="text" name="documentRequestOther" value="${data.documentRequestOther || ""}" class="inline-input" placeholder="Please specify other document request" ${selected.includes("OTHER") ? "" : "hidden"}>
         </div>
@@ -274,7 +275,17 @@
       }
 
       form.querySelectorAll('input[name="documentRequests"]').forEach((el) => {
-        el.addEventListener("change", refreshDocumentBlocks);
+        el.addEventListener("change", () => {
+          if (el.value === "NONE" && el.checked) {
+            form.querySelectorAll('input[name="documentRequests"]').forEach((item) => {
+              if (item.value !== "NONE") item.checked = false;
+            });
+          } else if (el.value !== "NONE" && el.checked) {
+            const noneOption = form.querySelector('input[name="documentRequests"][value="NONE"]');
+            if (noneOption) noneOption.checked = false;
+          }
+          refreshDocumentBlocks();
+        });
       });
       refreshDocumentBlocks();
     }
@@ -399,6 +410,21 @@
         const documentRequests = [...form.querySelectorAll('input[name="documentRequests"]:checked')].map(
           (el) => el.value,
         );
+        if (!documentRequests.length) {
+          errorBox.textContent = "Please select a document request option.";
+          errorBox.hidden = false;
+          return;
+        }
+        if (documentRequests.includes("NONE") && documentRequests.length > 1) {
+          errorBox.textContent = "None cannot be combined with other document request options.";
+          errorBox.hidden = false;
+          return;
+        }
+        if (documentRequests.includes("OTHER") && !formData.documentRequestOther?.trim()) {
+          errorBox.textContent = "Please specify your other document request.";
+          errorBox.hidden = false;
+          return;
+        }
         payload.documentRequests = documentRequests;
         payload.documentRequestOther = documentRequests.includes("OTHER")
           ? formData.documentRequestOther
@@ -434,6 +460,11 @@
         let accommodationType = null;
         if (formData.accommodationOrganizer) accommodationType = "ORGANIZER";
         if (formData.accommodationOwn) accommodationType = "OWN";
+        if (!accommodationType) {
+          errorBox.textContent = "Please select an accommodation option.";
+          errorBox.hidden = false;
+          return;
+        }
 
         Object.assign(payload, {
           givenName: formData.givenName,

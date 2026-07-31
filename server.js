@@ -32,6 +32,7 @@ const DOCUMENT_REQUEST_TYPES = new Set([
   "PARTICIPATION",
   "VISA_SUPPORT",
   "OTHER",
+  "NONE",
 ]);
 const HOTEL_FORM_MIMES = new Set([
   "application/pdf",
@@ -54,7 +55,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-07-29-filedownload";
+const BUILD_VERSION = "2026-07-31-foreigner-form";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -93,6 +94,19 @@ function isAllowedUpload(file, allowedMimes, allowedExtensions) {
   if (allowedMimes.has(file.mimetype)) return true;
   const ext = path.extname(String(file.originalname || "")).toLowerCase();
   return allowedExtensions.has(ext);
+}
+
+function validateDocumentRequests(documentRequests) {
+  if (!Array.isArray(documentRequests) || !documentRequests.length) {
+    return "Please select a document request option.";
+  }
+  if (documentRequests.some((item) => !DOCUMENT_REQUEST_TYPES.has(item))) {
+    return "Please select valid document request options.";
+  }
+  if (documentRequests.includes("NONE") && documentRequests.length > 1) {
+    return "None cannot be combined with other document request options.";
+  }
+  return null;
 }
 
 function resolveMimeType(filename, mimetype) {
@@ -633,6 +647,11 @@ app.post(
     return res.status(400).json({ error: "Please select valid document request options." });
   }
 
+  const documentRequestError = validateDocumentRequests(documentRequests);
+  if (documentRequestError) {
+    return res.status(400).json({ error: documentRequestError });
+  }
+
   if (documentRequests.includes("OTHER") && !documentRequestOther) {
     return res
       .status(400)
@@ -648,8 +667,8 @@ app.post(
       .json({ error: "Please upload a passport copy for Visa Support Letter." });
   }
 
-  if (accommodationType && !ACCOMMODATION_TYPES.has(accommodationType)) {
-    return res.status(400).json({ error: "Please select a valid accommodation option." });
+  if (!accommodationType || !ACCOMMODATION_TYPES.has(accommodationType)) {
+    return res.status(400).json({ error: "Please select an accommodation option." });
   }
 
   if (accommodationType === "ORGANIZER") {
@@ -711,7 +730,7 @@ app.post(
         accommodationType === "ORGANIZER" ? hotelFormFile.originalname : null,
         accommodationType === "ORGANIZER" ? uploadMime(hotelFormFile) : null,
         accommodationType === "ORGANIZER" ? hotelFormFile.buffer : null,
-        documentRequests.length ? documentRequests : null,
+        documentRequests,
         documentRequestOther,
         documentRequestUrgent,
         visaSupportNeeded ? passportCopyFile.originalname : null,
@@ -956,11 +975,9 @@ app.put("/api/mypage/me", async (req, res) => {
     };
 
     if (Array.isArray(body.documentRequests)) {
-      const invalidDocument = body.documentRequests.some(
-        (item) => !DOCUMENT_REQUEST_TYPES.has(item),
-      );
-      if (invalidDocument) {
-        return res.status(400).json({ error: "Invalid document request type." });
+      const documentRequestError = validateDocumentRequests(body.documentRequests);
+      if (documentRequestError) {
+        return res.status(400).json({ error: documentRequestError });
       }
       fields.document_requests = body.documentRequests;
       fields.document_request_other = body.documentRequests.includes("OTHER")
@@ -996,6 +1013,12 @@ app.put("/api/mypage/me", async (req, res) => {
         (body.departureDate && body.departureTime
           ? `${body.departureDate}T${body.departureTime}`
           : registration.departure_datetime);
+
+      if (body.accommodationType !== undefined) {
+        if (!body.accommodationType || !ACCOMMODATION_TYPES.has(body.accommodationType)) {
+          return res.status(400).json({ error: "Please select an accommodation option." });
+        }
+      }
 
       Object.assign(fields, {
         given_name: body.givenName ?? registration.given_name,

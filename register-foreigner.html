@@ -118,7 +118,7 @@
         </div>
 
         <div class="field">
-          <label>Document Request</label>
+          <label>Document Request <span class="req">*</span></label>
           <div class="checkbox-group" id="documentRequestGroup">
             <label class="checkbox-row">
               <input type="checkbox" name="documentRequests" value="INVITATION">
@@ -135,6 +135,10 @@
             <label class="checkbox-row">
               <input type="checkbox" name="documentRequests" value="OTHER" id="documentOtherCheckbox">
               Other (please specify)
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="documentRequests" value="NONE" id="documentRequestNone">
+              None
             </label>
           </div>
           <input type="text" name="documentRequestOther" id="documentRequestOther" class="inline-input" placeholder="Please specify other document request" hidden>
@@ -205,7 +209,7 @@
         </div>
 
         <div class="field">
-          <label>Accommodation</label>
+          <label>Accommodation <span class="req">*</span></label>
           <div class="checkbox-group">
             <label class="checkbox-row">
               <input type="checkbox" name="accommodationOrganizer" id="accommodationOrganizer">
@@ -297,6 +301,7 @@
     const dietaryDetails = document.getElementById("dietaryDetails");
     const dietaryOtherRadio = document.getElementById("dietaryOtherRadio");
     const transportNone = document.getElementById("transportNone");
+    const documentRequestNone = document.getElementById("documentRequestNone");
 
     function getDocumentRequests() {
       return [...form.querySelectorAll('input[name="documentRequests"]:checked')].map(
@@ -321,7 +326,16 @@
     }
 
     form.querySelectorAll('input[name="documentRequests"]').forEach((checkbox) => {
-      checkbox.addEventListener("change", refreshDocumentRequestBlocks);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.value === "NONE" && checkbox.checked) {
+          form.querySelectorAll('input[name="documentRequests"]').forEach((el) => {
+            if (el.value !== "NONE") el.checked = false;
+          });
+        } else if (checkbox.value !== "NONE" && checkbox.checked && documentRequestNone) {
+          documentRequestNone.checked = false;
+        }
+        refreshDocumentRequestBlocks();
+      });
     });
 
     accommodationOrganizer.addEventListener("change", () => {
@@ -416,6 +430,18 @@
         return;
       }
 
+      if (!documentRequests.length) {
+        errorBox.textContent = "Please select a document request option.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (documentRequests.includes("NONE") && documentRequests.length > 1) {
+        errorBox.textContent = "None cannot be combined with other document request options.";
+        errorBox.hidden = false;
+        return;
+      }
+
       if (documentRequests.includes("OTHER") && !data.documentRequestOther?.trim()) {
         errorBox.textContent = "Please specify your other document request.";
         errorBox.hidden = false;
@@ -430,6 +456,12 @@
 
       if (needsDietaryDetails && !data.dietaryDetails?.trim()) {
         errorBox.textContent = "Please provide dietary preference details.";
+        errorBox.hidden = false;
+        return;
+      }
+
+      if (!accommodationOrganizer.checked && !accommodationOwn.checked) {
+        errorBox.textContent = "Please select an accommodation option.";
         errorBox.hidden = false;
         return;
       }
