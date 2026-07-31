@@ -1302,6 +1302,81 @@ app.get("/api/admin/registrations", async (req, res) => {
   }
 });
 
+app.delete("/api/admin/registrations/:id", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { ipAddress, userAgent } = getRequestMeta(req);
+
+  try {
+    const existing = await pool.query(
+      "SELECT id, type, name, contact FROM registrations WHERE id = $1",
+      [req.params.id],
+    );
+    if (!existing.rows[0]) {
+      return res.status(404).json({ error: "Registration not found." });
+    }
+
+    const row = existing.rows[0];
+    await pool.query("DELETE FROM registrations WHERE id = $1", [row.id]);
+
+    await serverLog({
+      event: "admin.registration.delete",
+      category: "REGISTRATION",
+      status: "SUCCESS",
+      registrationType: row.type,
+      registrationId: row.id,
+      applicantName: row.name,
+      contact: row.contact,
+      statusCode: 200,
+      ipAddress,
+      userAgent,
+    });
+
+    return res.json({ message: "Registration deleted.", deletedId: row.id });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.delete("/api/admin/registrations", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (req.body?.confirm !== "DELETE ALL") {
+    return res.status(400).json({
+      error: 'Confirmation required. Send { "confirm": "DELETE ALL" }.',
+    });
+  }
+
+  const { ipAddress, userAgent } = getRequestMeta(req);
+
+  try {
+    const countResult = await pool.query("SELECT COUNT(*)::int AS count FROM registrations");
+    const deletedCount = countResult.rows[0]?.count || 0;
+    await pool.query("DELETE FROM registrations");
+
+    await serverLog({
+      event: "admin.registrations.delete_all",
+      category: "REGISTRATION",
+      status: "SUCCESS",
+      statusCode: 200,
+      ipAddress,
+      userAgent,
+      metadata: { deletedCount },
+    });
+
+    return res.json({
+      message: "All registrations deleted.",
+      deletedCount,
+    });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
 app.use(express.static(ROOT_DIR));
 
 initDatabase()

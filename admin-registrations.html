@@ -52,6 +52,7 @@
         <input type="search" id="searchInput" placeholder="이름, 이메일, 소속 검색" class="admin-search">
         <button type="button" class="btn btn-secondary" id="refreshBtn">새로고침</button>
         <button type="button" class="btn btn-secondary" id="exportBtn">CSV 다운로드</button>
+        <button type="button" class="btn btn-danger" id="deleteAllBtn">전체 삭제</button>
       </div>
       <div class="log-table-wrap">
         <table class="log-table">
@@ -81,6 +82,9 @@
         <button type="button" class="detail-close" id="detailClose">×</button>
       </div>
       <div id="detailContent" class="detail-content"></div>
+      <div class="detail-modal-actions">
+        <button type="button" class="btn btn-danger" id="deleteRegistrationBtn">이 신청 삭제</button>
+      </div>
     </div>
   </div>
 
@@ -112,6 +116,21 @@
 
     let adminPassword = "";
     let allRegistrations = [];
+    let selectedRegistration = null;
+
+    function adminHeaders(json) {
+      const headers = { "x-admin-password": adminPassword.trim() };
+      if (json) headers["Content-Type"] = "application/json";
+      return headers;
+    }
+
+    async function readAdminJson(res) {
+      const data = await readJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
+      }
+      return data;
+    }
 
     function escapeHtml(value) {
       return String(value ?? "")
@@ -215,6 +234,7 @@
     }
 
     function openDetail(row) {
+      selectedRegistration = row;
       const lines = [
         detailRow("등록 ID", row.id),
         detailRow("구분", row.type === "DOMESTIC" ? "내국인" : "외국인"),
@@ -311,7 +331,61 @@
     }
 
     function closeDetail() {
+      selectedRegistration = null;
       document.getElementById("detailModal").hidden = true;
+    }
+
+    async function deleteRegistration() {
+      if (!selectedRegistration) return;
+      const { id, name } = selectedRegistration;
+      if (
+        !confirm(
+          `「${name}」 신청을 삭제할까요?\n\nDB에서 영구 삭제되며 복구할 수 없습니다.`,
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/registrations/${id}`, {
+          method: "DELETE",
+          headers: adminHeaders(),
+        });
+        await readAdminJson(res);
+        closeDetail();
+        await loadRegistrations();
+      } catch (error) {
+        alert(error.message);
+      }
+    }
+
+    async function deleteAllRegistrations() {
+      const typed = prompt("전체 신청을 삭제하려면 「전체삭제」를 입력하세요.");
+      if (typed !== "전체삭제") {
+        if (typed !== null) alert("입력이 일치하지 않아 취소되었습니다.");
+        return;
+      }
+      if (
+        !confirm(
+          `등록된 신청 ${allRegistrations.length}건을 모두 삭제할까요?\n\n이 작업은 되돌릴 수 없습니다.`,
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/registrations", {
+          method: "DELETE",
+          headers: adminHeaders(true),
+          body: JSON.stringify({ confirm: "DELETE ALL" }),
+        });
+        const data = await readAdminJson(res);
+        closeDetail();
+        await loadRegistrations();
+        alert(`${data.deletedCount ?? 0}건이 삭제되었습니다.`);
+      } catch (error) {
+        alert(error.message);
+      }
     }
 
     function renderDashboard() {
@@ -482,6 +556,8 @@
 
     document.getElementById("refreshBtn").addEventListener("click", loadRegistrations);
     document.getElementById("exportBtn").addEventListener("click", downloadCsv);
+    document.getElementById("deleteAllBtn").addEventListener("click", deleteAllRegistrations);
+    document.getElementById("deleteRegistrationBtn").addEventListener("click", deleteRegistration);
     document.getElementById("typeFilter").addEventListener("change", renderDashboard);
     document.getElementById("searchInput").addEventListener("input", renderDashboard);
     document.getElementById("detailClose").addEventListener("click", closeDetail);

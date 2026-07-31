@@ -178,6 +178,24 @@ body.admin-layout .page {
   word-break: break-word;
 }
 
+.detail-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.btn-danger {
+  background: #dc2626;
+  color: #fff;
+  border: none;
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+}
+
 @media (max-width: 640px) {
   .detail-row {
     grid-template-columns: 1fr;
