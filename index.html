@@ -23,7 +23,7 @@
           내국인 사전 등록
           <small>Domestic Pre-Registration</small>
         </a>
-        <a href="register-foreigner.html" class="home-choice secondary">
+        <a href="#" class="home-choice secondary" id="foreignerChoice" role="button">
           International<br>Pre-registration
         </a>
       </div>
@@ -50,26 +50,41 @@
     </div>
   </div>
 
+  <div id="foreignerNotice" class="home-notice" hidden>
+    <div class="home-notice-backdrop" id="foreignerNoticeBackdrop"></div>
+    <div class="home-notice-panel" role="dialog" aria-labelledby="foreignerNoticeTitle" lang="en">
+      <p id="foreignerNoticeTitle" class="home-notice-text">Pre-registration is now closed as we have reached full capacity. Thank you for your interest in APCSE 2026.</p>
+      <button type="button" class="home-notice-btn" id="foreignerNoticeClose">OK</button>
+    </div>
+  </div>
+
   <script>
-    const domesticNotice = document.getElementById("domesticNotice");
-    const showDomesticNotice = () => {
-      domesticNotice.hidden = false;
-    };
-    const hideDomesticNotice = () => {
-      domesticNotice.hidden = true;
-    };
+    function bindNotice(noticeId, openTriggerId, closeBtnId, backdropId, queryKey) {
+      const notice = document.getElementById(noticeId);
+      const show = () => {
+        notice.hidden = false;
+      };
+      const hide = () => {
+        notice.hidden = true;
+      };
 
-    document.getElementById("domesticChoice").addEventListener("click", (e) => {
-      e.preventDefault();
-      showDomesticNotice();
-    });
-    document.getElementById("domesticNoticeClose").addEventListener("click", hideDomesticNotice);
-    document.getElementById("domesticNoticeBackdrop").addEventListener("click", hideDomesticNotice);
+      if (openTriggerId) {
+        document.getElementById(openTriggerId).addEventListener("click", (e) => {
+          e.preventDefault();
+          show();
+        });
+      }
+      document.getElementById(closeBtnId).addEventListener("click", hide);
+      document.getElementById(backdropId).addEventListener("click", hide);
 
-    if (new URLSearchParams(location.search).get("domestic") === "closed") {
-      showDomesticNotice();
-      history.replaceState(null, "", "index.html");
+      if (new URLSearchParams(location.search).get(queryKey) === "closed") {
+        show();
+        history.replaceState(null, "", "index.html");
+      }
     }
+
+    bindNotice("domesticNotice", "domesticChoice", "domesticNoticeClose", "domesticNoticeBackdrop", "domestic");
+    bindNotice("foreignerNotice", "foreignerChoice", "foreignerNoticeClose", "foreignerNoticeBackdrop", "foreigner");
   </script>
 </body>
 </html>
