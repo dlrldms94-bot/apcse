@@ -55,7 +55,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-07-31-foreigner-form";
+const BUILD_VERSION = "2026-09-04-attendance";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -107,6 +107,32 @@ function validateDocumentRequests(documentRequests) {
     return "None cannot be combined with other document request options.";
   }
   return null;
+}
+
+function normalizeLunchAttendance(attendanceDates, lunchAttendance) {
+  if (!Array.isArray(attendanceDates) || !attendanceDates.length) {
+    return null;
+  }
+  if (!lunchAttendance || typeof lunchAttendance !== "object" || Array.isArray(lunchAttendance)) {
+    return null;
+  }
+
+  const normalized = {};
+  for (const date of attendanceDates) {
+    if (!DOMESTIC_ATTENDANCE_DATES.has(date)) {
+      return null;
+    }
+    if (typeof lunchAttendance[date] !== "boolean") {
+      return null;
+    }
+    normalized[date] = lunchAttendance[date];
+  }
+
+  if (Object.keys(normalized).length !== attendanceDates.length) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function resolveMimeType(filename, mimetype) {
@@ -225,6 +251,7 @@ function serializeRegistration(row) {
     affiliationType: row.affiliation_type,
     affiliationTypeOther: row.affiliation_type_other,
     attendanceDates: row.attendance_dates || [],
+    lunchAttendance: row.lunch_attendance || {},
     teacherDocumentNeeded: row.teacher_document_needed,
     givenName: row.given_name,
     familyName: row.family_name,
@@ -292,7 +319,11 @@ function splitDatetime(datetime) {
   return { date, time: time.slice(0, 5) };
 }
 
-const FOREIGNER_ATTENDANCE_DATES = new Set([
+const DOMESTIC_ATTENDANCE_DATES = new Set(["2026-10-15", "2026-10-16"]);
+
+const FOREIGNER_ATTENDANCE_DATES = new Set(["2026-10-15", "2026-10-16"]);
+
+const FOREIGNER_ATTENDANCE_DATES_LEGACY = new Set([
   "2026-10-14",
   "2026-10-15",
   "2026-10-16",
@@ -351,6 +382,7 @@ app.post("/api/register/domestic", async (req, res) => {
     nameEn,
     affiliationEn,
     titleEn,
+    lunchAttendance,
   } = body;
 
   if (
@@ -418,11 +450,18 @@ app.post("/api/register/domestic", async (req, res) => {
     return res.status(400).json({ error: errorMessage });
   }
 
-  const validDates = attendanceDates.every((date) =>
-    ["2026-10-15", "2026-10-16"].includes(date),
-  );
+  const validDates = attendanceDates.every((date) => DOMESTIC_ATTENDANCE_DATES.has(date));
   if (!validDates) {
     const errorMessage = "참석 희망일을 올바르게 선택해주세요.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const normalizedLunchAttendance = normalizeLunchAttendance(
+    attendanceDates,
+    lunchAttendance,
+  );
+  if (!normalizedLunchAttendance) {
+    const errorMessage = "선택하신 참석일마다 중식 참석 여부를 선택해주세요.";
     return res.status(400).json({ error: errorMessage });
   }
 
@@ -448,9 +487,9 @@ app.post("/api/register/domestic", async (req, res) => {
     const result = await pool.query(
       `INSERT INTO registrations (
         type, name, name_en, title, title_en, affiliation, affiliation_en, contact, email, privacy_consent, password_hash,
-        affiliation_type, affiliation_type_other, attendance_dates, teacher_document_needed,
+        affiliation_type, affiliation_type_other, attendance_dates, lunch_attendance, teacher_document_needed,
         payment_status
-      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'NOT_REQUIRED')
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,'NOT_REQUIRED')
       RETURNING *`,
       [
         "DOMESTIC",
@@ -467,6 +506,7 @@ app.post("/api/register/domestic", async (req, res) => {
         affiliationType,
         affiliationType === "OTHER" ? affiliationTypeOther : null,
         attendanceDates,
+        normalizedLunchAttendance,
         Boolean(teacherDocumentNeeded),
       ],
     );
@@ -968,6 +1008,7 @@ app.put("/api/mypage/me", async (req, res) => {
             ? null
             : registration.affiliation_type_other,
       attendance_dates: body.attendanceDates ?? registration.attendance_dates,
+      lunch_attendance: registration.lunch_attendance,
       teacher_document_needed:
         body.teacherDocumentNeeded ?? registration.teacher_document_needed,
       document_requests: body.documentRequests ?? registration.document_requests,
@@ -1000,6 +1041,42 @@ app.put("/api/mypage/me", async (req, res) => {
         Array.isArray(registration.document_requests) &&
         registration.document_requests.includes("VISA_SUPPORT");
       fields.document_request_urgent = hasVisa && parseBoolean(body.documentRequestUrgent);
+    }
+
+    if (registration.type === "DOMESTIC" && body.attendanceDates !== undefined) {
+      const dates = body.attendanceDates;
+      if (
+        !Array.isArray(dates) ||
+        !dates.length ||
+        !dates.every((date) => DOMESTIC_ATTENDANCE_DATES.has(date))
+      ) {
+        return res.status(400).json({ error: "참석 희망일을 올바르게 선택해주세요." });
+      }
+      const normalizedLunch = normalizeLunchAttendance(dates, body.lunchAttendance);
+      if (!normalizedLunch) {
+        return res
+          .status(400)
+          .json({ error: "선택하신 참석일마다 중식 참석 여부를 선택해주세요." });
+      }
+      fields.attendance_dates = dates;
+      fields.lunch_attendance = normalizedLunch;
+    }
+
+    if (registration.type === "FOREIGNER" && Array.isArray(body.attendanceDates)) {
+      const legacyOct14 = (registration.attendance_dates || []).includes("2026-10-14");
+      if (body.attendanceDates.includes("2026-10-14") && !legacyOct14) {
+        return res.status(400).json({ error: "October 14 is no longer available." });
+      }
+      const allowedDates = legacyOct14
+        ? FOREIGNER_ATTENDANCE_DATES_LEGACY
+        : FOREIGNER_ATTENDANCE_DATES;
+      if (
+        !body.attendanceDates.length ||
+        !body.attendanceDates.every((date) => allowedDates.has(date))
+      ) {
+        return res.status(400).json({ error: "Please select valid participation dates." });
+      }
+      fields.attendance_dates = body.attendanceDates;
     }
 
     if (registration.type === "FOREIGNER") {
@@ -1078,8 +1155,9 @@ app.put("/api/mypage/me", async (req, res) => {
         document_requests = $29, document_request_other = $30,
         document_request_urgent = $31,
         name_en = $32, affiliation_en = $33, title_en = $34,
+        lunch_attendance = $35,
         updated_at = NOW()
-      WHERE id = $35
+      WHERE id = $36
       RETURNING *`,
       [
         registration.type === "FOREIGNER" ? fields.name : registration.name,
@@ -1116,6 +1194,9 @@ app.put("/api/mypage/me", async (req, res) => {
         fields.name_en ?? registration.name_en,
         fields.affiliation_en ?? registration.affiliation_en,
         fields.title_en ?? registration.title_en,
+        registration.type === "DOMESTIC"
+          ? fields.lunch_attendance ?? registration.lunch_attendance
+          : registration.lunch_attendance,
         sessionId,
       ],
     );

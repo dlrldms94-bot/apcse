@@ -39,14 +39,18 @@
     };
 
     const ATTENDANCE_OPTIONS_DOMESTIC = [
-      { value: "2026-10-15", label: "10월 15일(목)" },
-      { value: "2026-10-16", label: "10월 16일(금)" },
+      { value: "2026-10-15", label: "10월 15일(목) - 메인 세션, 패널 토론, 세부 발표 및 워크숍" },
+      { value: "2026-10-16", label: "10월 16일(금) - 메인 세션, 패널 토론, 세부 발표 및 워크숍" },
     ];
 
     const ATTENDANCE_OPTIONS_FOREIGNER = [
-      { value: "2026-10-14", label: "October 14 (Wed) - Pre-conference Program" },
-      { value: "2026-10-15", label: "October 15 (Thu) - Main Sessions" },
-      { value: "2026-10-16", label: "October 16 (Fri) - Main Sessions" },
+      {
+        value: "2026-10-14",
+        label: "October 14 (Wed) - Pre-conference Program (School Visit & Cultural Experience)",
+        disabled: true,
+      },
+      { value: "2026-10-15", label: "October 15 (Thu) - Main Sessions, Panel Discussions, Workshops" },
+      { value: "2026-10-16", label: "October 16 (Fri) - Main Sessions, Panel Discussions, Workshops" },
     ];
 
     const DIETARY_LABELS = {
@@ -96,9 +100,27 @@
 
     function renderDomesticFields(data) {
       const selectedDates = data.attendanceDates || [];
+      const lunchMap = data.lunchAttendance || {};
       const attendanceHtml = ATTENDANCE_OPTIONS_DOMESTIC.map((option) => {
         const checked = selectedDates.includes(option.value) ? "checked" : "";
-        return `<label class="checkbox-row"><input type="checkbox" name="attendanceDates" value="${option.value}" ${checked}> ${option.label}</label>`;
+        const lunchYes = lunchMap[option.value] === true ? "checked" : "";
+        const lunchNo = lunchMap[option.value] === false ? "checked" : "";
+        const lunchHidden = checked ? "" : "hidden";
+        return `
+          <div class="attendance-date-row">
+            <label class="checkbox-row">
+              <input type="checkbox" name="attendanceDates" value="${option.value}" class="attendance-date-checkbox" ${checked}>
+              ${option.label}
+            </label>
+            <div class="lunch-survey conditional-block" data-lunch-for="${option.value}" ${lunchHidden}>
+              <p class="lunch-survey-label">중식 참석 <span class="req">*</span></p>
+              <div class="radio-group lunch-survey-options">
+                <label class="radio-row"><input type="radio" name="lunchAttendance_${option.value}" value="yes" ${lunchYes}> 참석</label>
+                <label class="radio-row"><input type="radio" name="lunchAttendance_${option.value}" value="no" ${lunchNo}> 불참</label>
+              </div>
+            </div>
+          </div>
+        `;
       }).join("");
 
       const affiliationType = data.affiliationType || "";
@@ -120,8 +142,10 @@
         ${field("휴대폰 번호", "phone", data.contact, { required: true, placeholder: "010-0000-0000" })}
         ${field("이메일 주소", "email", data.email, { required: true, type: "email" })}
         <div class="field">
-          <label>참석 희망일</label>
+          <label>참석 희망일 <span class="req">*</span></label>
           <div class="checkbox-group">${attendanceHtml}</div>
+          <p class="hint">※ 참석 희망일을 선택하시면 해당 날짜의 중식 참석 여부를 함께 선택해 주세요.</p>
+          <p class="hint">※ 가벼운 샌드위치 런치박스 제공 예정입니다.</p>
         </div>
         <div class="field">
           <label>교사 출장 증빙 공문 필요 여부</label>
@@ -137,7 +161,10 @@
       const selectedDates = data.attendanceDates || [];
       const attendanceHtml = ATTENDANCE_OPTIONS_FOREIGNER.map((option) => {
         const checked = selectedDates.includes(option.value) ? "checked" : "";
-        return `<label class="checkbox-row"><input type="checkbox" name="attendanceDates" value="${option.value}" ${checked}> ${option.label}</label>`;
+        const isDisabled = option.disabled && !selectedDates.includes(option.value);
+        const disabled = isDisabled ? "disabled" : "";
+        const rowClass = isDisabled ? "checkbox-row checkbox-disabled" : "checkbox-row";
+        return `<label class="${rowClass}"><input type="checkbox" name="attendanceDates" value="${option.value}" ${checked} ${disabled}> ${option.label}</label>`;
       }).join("");
 
       const transport = data.transportationOptions || [];
@@ -164,8 +191,9 @@
         ${field("Mobile Phone Number", "phone", data.contact, { required: true, placeholder: "+82 10-1234-5678" })}
         ${field("WhatsApp ID", "whatsappId", data.whatsappId, { required: true })}
         <div class="field">
-          <label>Participation Date</label>
+          <label>Participation Date <span class="req">*</span></label>
           <div class="checkbox-group">${attendanceHtml}</div>
+          <p class="hint">October 14 is no longer available for new registrations.</p>
         </div>
         ${renderDocumentRequestFields(data)}
         <div class="field">
@@ -253,6 +281,31 @@
           </div>
         </div>
       `;
+    }
+
+    function bindDomesticAttendanceInteractions() {
+      form.querySelectorAll(".attendance-date-checkbox").forEach((checkbox) => {
+        checkbox.addEventListener("change", () => {
+          const lunchBlock = form.querySelector(`[data-lunch-for="${checkbox.value}"]`);
+          if (!lunchBlock) return;
+          lunchBlock.hidden = !checkbox.checked;
+          if (!checkbox.checked) {
+            lunchBlock.querySelectorAll('input[type="radio"]').forEach((radio) => {
+              radio.checked = false;
+            });
+          }
+        });
+      });
+    }
+
+    function getLunchAttendanceFromForm(dates) {
+      const result = {};
+      for (const date of dates) {
+        const selected = form.querySelector(`input[name="lunchAttendance_${date}"]:checked`);
+        if (!selected) return null;
+        result[date] = selected.value === "yes";
+      }
+      return result;
     }
 
     function bindDocumentRequestInteractions() {
@@ -357,6 +410,8 @@
       if (isForeigner) {
         bindForeignerInteractions();
         bindDocumentRequestInteractions();
+      } else {
+        bindDomesticAttendanceInteractions();
       }
 
       const accommodation = form.querySelector('[name="accommodation"]');
@@ -435,6 +490,17 @@
         const attendanceDates = [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
           (el) => el.value,
         );
+        if (!attendanceDates.length) {
+          errorBox.textContent = "참석 희망일을 1개 이상 선택해 주세요.";
+          errorBox.hidden = false;
+          return;
+        }
+        const lunchAttendance = getLunchAttendanceFromForm(attendanceDates);
+        if (!lunchAttendance) {
+          errorBox.textContent = "선택하신 참석일마다 중식 참석 여부를 선택해 주세요.";
+          errorBox.hidden = false;
+          return;
+        }
         Object.assign(payload, {
           title: formData.title,
           affiliation: formData.affiliation,
@@ -446,6 +512,7 @@
           affiliationType: formData.affiliationType,
           affiliationTypeOther: formData.affiliationType === "OTHER" ? formData.affiliationTypeOther : null,
           attendanceDates,
+          lunchAttendance,
           teacherDocumentNeeded: formData.teacherDocumentNeeded === "yes",
         });
       }
@@ -454,6 +521,19 @@
         const attendanceDates = [...form.querySelectorAll('input[name="attendanceDates"]:checked')].map(
           (el) => el.value,
         );
+        if (!attendanceDates.length) {
+          errorBox.textContent = "Please select at least one participation date.";
+          errorBox.hidden = false;
+          return;
+        }
+        const oct14Input = form.querySelector('input[name="attendanceDates"][value="2026-10-14"]');
+        if (
+          oct14Input?.disabled &&
+          oct14Input.checked &&
+          !attendanceDates.includes("2026-10-14")
+        ) {
+          attendanceDates.push("2026-10-14");
+        }
         const transportationOptions = [...form.querySelectorAll('input[name="transportationOptions"]:checked')].map(
           (el) => el.value,
         );

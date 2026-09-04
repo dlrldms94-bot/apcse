@@ -6,6 +6,7 @@
   <title>APCSE 2026 사전등록</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/home.css">
+  <script src="js/registration-schedule.js"></script>
 </head>
 <body class="home-page">
   <header class="home-header">
@@ -45,7 +46,7 @@
   <div id="domesticNotice" class="home-notice" hidden>
     <div class="home-notice-backdrop" id="domesticNoticeBackdrop"></div>
     <div class="home-notice-panel" role="dialog" aria-labelledby="domesticNoticeTitle">
-      <p id="domesticNoticeTitle" class="home-notice-text">내국인 사전 등록은 8월 중 오픈 예정입니다.</p>
+      <p id="domesticNoticeTitle" class="home-notice-text">내국인 사전 등록은 9/7(월) 09:00에 오픈 예정입니다.</p>
       <button type="button" class="home-notice-btn" id="domesticNoticeClose">확인</button>
     </div>
   </div>
@@ -53,7 +54,7 @@
   <div id="foreignerNotice" class="home-notice" hidden>
     <div class="home-notice-backdrop" id="foreignerNoticeBackdrop"></div>
     <div class="home-notice-panel" role="dialog" aria-labelledby="foreignerNoticeTitle" lang="en">
-      <p id="foreignerNoticeTitle" class="home-notice-text">Pre-registration is now closed as we have reached full capacity. Thank you for your interest in APCSE 2026.</p>
+      <p id="foreignerNoticeTitle" class="home-notice-text">International pre-registration opens on Mon, Sep 7 at 09:00 (KST).</p>
       <button type="button" class="home-notice-btn" id="foreignerNoticeClose">OK</button>
     </div>
   </div>
@@ -83,8 +84,34 @@
       }
     }
 
-    bindNotice("domesticNotice", "domesticChoice", "domesticNoticeClose", "domesticNoticeBackdrop", "domestic");
-    bindNotice("foreignerNotice", "foreignerChoice", "foreignerNoticeClose", "foreignerNoticeBackdrop", "foreigner");
+    function enableChoiceLink(choiceId, href) {
+      const choice = document.getElementById(choiceId);
+      choice.href = href;
+      choice.removeAttribute("role");
+    }
+
+    function scheduleAutoOpen(choiceId, href, openAt) {
+      const delay = openAt - Date.now();
+      if (delay <= 0) return;
+      setTimeout(() => {
+        enableChoiceLink(choiceId, href);
+        location.reload();
+      }, delay);
+    }
+
+    if (RegistrationSchedule.isDomesticRegistrationOpen()) {
+      enableChoiceLink("domesticChoice", "register-domestic.html");
+    } else {
+      bindNotice("domesticNotice", "domesticChoice", "domesticNoticeClose", "domesticNoticeBackdrop", "domestic");
+      scheduleAutoOpen("domesticChoice", "register-domestic.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+    }
+
+    if (RegistrationSchedule.isForeignerRegistrationOpen()) {
+      enableChoiceLink("foreignerChoice", "register-foreigner.html");
+    } else {
+      bindNotice("foreignerNotice", "foreignerChoice", "foreignerNoticeClose", "foreignerNoticeBackdrop", "foreigner");
+      scheduleAutoOpen("foreignerChoice", "register-foreigner.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+    }
   </script>
 </body>
 </html>

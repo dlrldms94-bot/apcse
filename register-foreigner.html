@@ -8,8 +8,11 @@
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
   <link rel="stylesheet" href="css/form.css">
+  <script src="js/registration-schedule.js"></script>
   <script>
-    location.replace("index.html?foreigner=closed");
+    if (!RegistrationSchedule.isForeignerRegistrationOpen()) {
+      location.replace("index.html?foreigner=closed");
+    }
   </script>
 </head>
 <body>
@@ -105,8 +108,8 @@
         <div class="field">
           <label>Participation Date <span class="req">*</span> (Select all that apply)</label>
           <div class="checkbox-group">
-            <label class="checkbox-row">
-              <input type="checkbox" name="attendanceDates" value="2026-10-14">
+            <label class="checkbox-row checkbox-disabled">
+              <input type="checkbox" name="attendanceDates" value="2026-10-14" disabled>
               October 14 (Wed) - Pre-conference Program (School Visit &amp; Cultural Experience)
             </label>
             <label class="checkbox-row">
@@ -118,6 +121,7 @@
               October 16 (Fri) - Main Sessions, Panel Discussions, Workshops
             </label>
           </div>
+          <p class="hint">October 14 is no longer available for new registrations.</p>
         </div>
 
         <div class="field">

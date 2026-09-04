@@ -260,6 +260,7 @@
         detailRow("이메일", row.email),
         detailRow("WhatsApp", row.whatsappId),
         detailRow("참석 희망일", formatAttendanceDates(row.attendanceDates)),
+        detailRow("중식 참석", formatLunchAttendance(row)),
         detailRow(
           "교사 출장 공문",
           row.teacherDocumentNeeded === true
@@ -439,6 +440,17 @@
       return "";
     }
 
+    function formatLunchAttendance(row) {
+      if (row.type !== "DOMESTIC") return "";
+      const lunch = row.lunchAttendance || {};
+      return Object.entries(lunch)
+        .map(([date, attending]) => {
+          const label = date.replace("2026-10-", "10/");
+          return `${label}:${attending ? "참석" : "불참"}`;
+        })
+        .join("; ");
+    }
+
     function formatAccommodation(row) {
       if (row.accommodationType === "ORGANIZER") return "주최 측 예약";
       if (row.accommodationType === "OWN") return "개별 예약";
@@ -471,6 +483,7 @@
         row.email || "",
         row.whatsappId || "",
         formatAttendanceDates(row.attendanceDates),
+        formatLunchAttendance(row),
         formatTeacherDocument(row),
         formatDocumentRequests(row),
         row.documentRequestUrgent ? "Y" : "",
@@ -507,6 +520,7 @@
       "이메일",
       "WhatsApp",
       "참석일",
+      "중식 참석",
       "교사 출장 공문",
       "서류발급요청",
       "긴급(Urgent)",
