@@ -89,13 +89,14 @@
       const disabled = options.disabled ? "disabled" : "";
       const hidden = options.hidden ? "hidden" : "";
       const placeholder = options.placeholder ? `placeholder="${options.placeholder}"` : "";
+      const reqMark = options.required ? ' <span class="req">*</span>' : "";
       if (type === "textarea") {
-        return `<div class="field" ${hidden}><label>${label}</label><textarea name="${name}" ${required}>${value || ""}</textarea></div>`;
+        return `<div class="field" ${hidden}><label>${label}${reqMark}</label><textarea name="${name}" ${required}>${value || ""}</textarea></div>`;
       }
       if (type === "checkbox") {
         return `<div class="field" ${hidden}><label class="checkbox-row"><input type="checkbox" name="${name}" ${value ? "checked" : ""}> ${label}</label></div>`;
       }
-      return `<div class="field" ${hidden}><label>${label}</label><input type="${type}" name="${name}" value="${value || ""}" ${required} ${disabled} ${placeholder}></div>`;
+      return `<div class="field" ${hidden}><label>${label}${reqMark}</label><input type="${type}" name="${name}" value="${value || ""}" ${required} ${disabled} ${placeholder}></div>`;
     }
 
     function renderDomesticFields(data) {
@@ -132,7 +133,7 @@
       return `
         <div class="form-row-2">
           ${field("소속 기관명", "affiliation", data.affiliation, { required: true })}
-          ${field("소속 기관명 (영문)", "affiliationEn", data.affiliationEn)}
+          ${field("소속 기관명 (영문)", "affiliationEn", data.affiliationEn, { required: true })}
         </div>
         <div class="field">
           <label>소속 유형</label>
@@ -382,11 +383,11 @@
       form.innerHTML = `
         <div class="form-row-2">
           ${field("이름 (한글)", "name", data.name, { disabled: true })}
-          ${field("영문명", "nameEn", data.nameEn)}
+          ${field("영문명", "nameEn", data.nameEn, { required: true })}
         </div>
         ${!isForeigner ? `<div class="form-row-2">
           ${field("직함 / 직책", "title", data.title, { required: true })}
-          ${field("직함 / 직책 (영문)", "titleEn", data.titleEn)}
+          ${field("직함 / 직책 (영문)", "titleEn", data.titleEn, { required: true })}
         </div>` : ""}
         ${!isForeigner ? renderDomesticFields(data) : renderForeignerFields(data)}
         ${field("새 비밀번호", "password", "", { type: "password", placeholder: "4~8자리 숫자/영문" })}
@@ -492,6 +493,11 @@
         );
         if (!attendanceDates.length) {
           errorBox.textContent = "참석 희망일을 1개 이상 선택해 주세요.";
+          errorBox.hidden = false;
+          return;
+        }
+        if (!formData.nameEn?.trim() || !formData.affiliationEn?.trim() || !formData.titleEn?.trim()) {
+          errorBox.textContent = "영문명, 소속 기관명(영문), 직함/직책(영문)을 입력해 주세요.";
           errorBox.hidden = false;
           return;
         }

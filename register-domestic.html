@@ -37,7 +37,7 @@
           <div class="privacy-details">
             <p>주식회사 온앤미(이하 "주최자")는 APCSE 사전등록 및 행사 운영을 위해 아래와 같이 개인정보를 수집·이용합니다.</p>
             <ul>
-              <li><strong>수집 항목:</strong> 이름, 소속 기관명, 소속 유형, 직함/직책, 휴대폰 번호, 이메일 주소, 참석 희망일, 중식 참석 수요, 교사 출장 증빙 공문 필요 여부, 마이페이지 비밀번호</li>
+              <li><strong>수집 항목:</strong> 이름, 영문명, 소속 기관명, 소속 기관명(영문), 소속 유형, 직함/직책, 직함/직책(영문), 휴대폰 번호, 이메일 주소, 참석 희망일, 중식 참석 수요, 교사 출장 증빙 공문 필요 여부, 마이페이지 비밀번호</li>
               <li><strong>수집 목적:</strong> 사전등록 접수, 참가 안내, 세부 프로그램 수요조사, 출장 증빙 공문 발송, 등록 정보 확인·수정</li>
               <li><strong>보유 기간:</strong> 행사 종료 후 1년 이내 파기 (관련 법령에 따른 보관 의무가 있는 경우 해당 기간 준수)</li>
               <li><strong>거부 권리:</strong> 동의를 거부하실 수 있으나, 거부 시 사전등록 및 행사 안내가 불가능합니다.</li>
@@ -62,8 +62,8 @@
             <input type="text" name="name" required>
           </div>
           <div class="field">
-            <label>영문명</label>
-            <input type="text" name="nameEn" placeholder="English name">
+            <label>영문명 <span class="req">*</span></label>
+            <input type="text" name="nameEn" placeholder="English name" required>
           </div>
         </div>
 
@@ -73,8 +73,8 @@
             <input type="text" name="affiliation" placeholder="예: OO대학교, OO초등학교, OO연구소" required>
           </div>
           <div class="field">
-            <label>소속 기관명 (영문)</label>
-            <input type="text" name="affiliationEn" placeholder="Organization (English)">
+            <label>소속 기관명 (영문) <span class="req">*</span></label>
+            <input type="text" name="affiliationEn" placeholder="Organization (English)" required>
           </div>
         </div>
 
@@ -115,8 +115,8 @@
             <input type="text" name="title" placeholder="예: 교사, 교수, 연구원, 주임, 학생 등" required>
           </div>
           <div class="field">
-            <label>직함 / 직책 (영문)</label>
-            <input type="text" name="titleEn" placeholder="Job title (English)">
+            <label>직함 / 직책 (영문) <span class="req">*</span></label>
+            <input type="text" name="titleEn" placeholder="Job title (English)" required>
           </div>
         </div>
 
@@ -291,6 +291,12 @@
         return;
       }
 
+      if (!data.nameEn?.trim() || !data.affiliationEn?.trim() || !data.titleEn?.trim()) {
+        errorBox.textContent = "영문명, 소속 기관명(영문), 직함/직책(영문)을 입력해 주세요.";
+        errorBox.hidden = false;
+        return;
+      }
+
       if (!attendanceDates.length) {
         errorBox.textContent = "참석 희망일을 1개 이상 선택해 주세요.";
         errorBox.hidden = false;
@@ -337,13 +343,13 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: data.name.trim(),
-            nameEn: data.nameEn?.trim() || "",
+            nameEn: data.nameEn.trim(),
             affiliation: data.affiliation.trim(),
-            affiliationEn: data.affiliationEn?.trim() || "",
+            affiliationEn: data.affiliationEn.trim(),
             affiliationType: data.affiliationType,
             affiliationTypeOther: data.affiliationType === "OTHER" ? data.affiliationTypeOther.trim() : null,
             title: data.title.trim(),
-            titleEn: data.titleEn?.trim() || "",
+            titleEn: data.titleEn.trim(),
             phone: data.phone.trim(),
             email,
             attendanceDates,

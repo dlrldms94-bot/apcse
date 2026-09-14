@@ -385,6 +385,10 @@ app.post("/api/register/domestic", async (req, res) => {
     lunchAttendance,
   } = body;
 
+  const trimmedNameEn = trimOptionalText(nameEn);
+  const trimmedAffiliationEn = trimOptionalText(affiliationEn);
+  const trimmedTitleEn = trimOptionalText(titleEn);
+
   if (
     !name ||
     !title ||
@@ -393,6 +397,9 @@ app.post("/api/register/domestic", async (req, res) => {
     !phone ||
     !email ||
     !password ||
+    !trimmedNameEn ||
+    !trimmedAffiliationEn ||
+    !trimmedTitleEn ||
     !Array.isArray(attendanceDates) ||
     !attendanceDates.length
   ) {
@@ -494,11 +501,11 @@ app.post("/api/register/domestic", async (req, res) => {
       [
         "DOMESTIC",
         name,
-        trimOptionalText(nameEn),
+        trimmedNameEn,
         title,
-        trimOptionalText(titleEn),
+        trimmedTitleEn,
         affiliation,
-        trimOptionalText(affiliationEn),
+        trimmedAffiliationEn,
         phone,
         email,
         true,
@@ -1041,6 +1048,25 @@ app.put("/api/mypage/me", async (req, res) => {
         Array.isArray(registration.document_requests) &&
         registration.document_requests.includes("VISA_SUPPORT");
       fields.document_request_urgent = hasVisa && parseBoolean(body.documentRequestUrgent);
+    }
+
+    if (registration.type === "DOMESTIC") {
+      const nextNameEn =
+        body.nameEn !== undefined ? trimOptionalText(body.nameEn) : registration.name_en;
+      const nextAffiliationEn =
+        body.affiliationEn !== undefined
+          ? trimOptionalText(body.affiliationEn)
+          : registration.affiliation_en;
+      const nextTitleEn =
+        body.titleEn !== undefined ? trimOptionalText(body.titleEn) : registration.title_en;
+
+      if (!nextNameEn || !nextAffiliationEn || !nextTitleEn) {
+        return res.status(400).json({ error: "영문명, 소속 기관명(영문), 직함/직책(영문)을 입력해주세요." });
+      }
+
+      fields.name_en = nextNameEn;
+      fields.affiliation_en = nextAffiliationEn;
+      fields.title_en = nextTitleEn;
     }
 
     if (registration.type === "DOMESTIC" && body.attendanceDates !== undefined) {
