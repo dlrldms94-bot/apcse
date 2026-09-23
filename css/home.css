@@ -250,6 +250,10 @@
   margin-bottom: 24px;
 }
 
+.home-notice-text p + p {
+  margin-top: 12px;
+}
+
 .home-notice-btn {
   min-width: 120px;
   padding: 12px 28px;

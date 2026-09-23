@@ -46,7 +46,10 @@
   <div id="domesticNotice" class="home-notice" hidden>
     <div class="home-notice-backdrop" id="domesticNoticeBackdrop"></div>
     <div class="home-notice-panel" role="dialog" aria-labelledby="domesticNoticeTitle">
-      <p id="domesticNoticeTitle" class="home-notice-text">내국인 사전 등록은 9/7(월) 09:00에 오픈 예정입니다.</p>
+      <div id="domesticNoticeTitle" class="home-notice-text">
+        <p>국내 참가자 사전등록이 마감되었습니다.</p>
+        <p>정원 마감으로 인해 사전등록이 종료되었습니다.<br>APCSE 2026에 보내주신 많은 관심과 성원에 감사드립니다.</p>
+      </div>
       <button type="button" class="home-notice-btn" id="domesticNoticeClose">확인</button>
     </div>
   </div>
@@ -54,7 +57,10 @@
   <div id="foreignerNotice" class="home-notice" hidden>
     <div class="home-notice-backdrop" id="foreignerNoticeBackdrop"></div>
     <div class="home-notice-panel" role="dialog" aria-labelledby="foreignerNoticeTitle" lang="en">
-      <p id="foreignerNoticeTitle" class="home-notice-text">International pre-registration opens on Mon, Sep 7 at 09:00 (KST).</p>
+      <div id="foreignerNoticeTitle" class="home-notice-text">
+        <p>International Advance Registration Is Now Closed.</p>
+        <p>The maximum number of participants has been reached.<br>Thank you for your interest in APCSE 2026.</p>
+      </div>
       <button type="button" class="home-notice-btn" id="foreignerNoticeClose">OK</button>
     </div>
   </div>
@@ -103,14 +109,18 @@
       enableChoiceLink("domesticChoice", "register-domestic.html");
     } else {
       bindNotice("domesticNotice", "domesticChoice", "domesticNoticeClose", "domesticNoticeBackdrop", "domestic");
-      scheduleAutoOpen("domesticChoice", "register-domestic.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+      if (!RegistrationSchedule.REGISTRATION_CLOSED) {
+        scheduleAutoOpen("domesticChoice", "register-domestic.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+      }
     }
 
     if (RegistrationSchedule.isForeignerRegistrationOpen()) {
       enableChoiceLink("foreignerChoice", "register-foreigner.html");
     } else {
       bindNotice("foreignerNotice", "foreignerChoice", "foreignerNoticeClose", "foreignerNoticeBackdrop", "foreigner");
-      scheduleAutoOpen("foreignerChoice", "register-foreigner.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+      if (!RegistrationSchedule.REGISTRATION_CLOSED) {
+        scheduleAutoOpen("foreignerChoice", "register-foreigner.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
+      }
     }
   </script>
 </body>

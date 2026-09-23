@@ -55,7 +55,12 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-09-04-attendance";
+const BUILD_VERSION = "2026-09-23-closed";
+const REGISTRATION_CLOSED = true;
+const REGISTRATION_CLOSED_MESSAGE_DOMESTIC =
+  "국내 참가자 사전등록이 마감되었습니다. 정원 마감으로 인해 사전등록이 종료되었습니다.";
+const REGISTRATION_CLOSED_MESSAGE_FOREIGNER =
+  "International advance registration is now closed. The maximum number of participants has been reached.";
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -355,6 +360,23 @@ app.post("/api/register/domestic", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
 
+  if (REGISTRATION_CLOSED) {
+    await serverLog({
+      event: "registration.domestic.failure",
+      category: "REGISTRATION",
+      status: "FAILURE",
+      registrationType: "DOMESTIC",
+      applicantName: body.name,
+      contact: body.phone || body.contact,
+      errorMessage: REGISTRATION_CLOSED_MESSAGE_DOMESTIC,
+      statusCode: 403,
+      ipAddress,
+      userAgent,
+      metadata: { payload: sanitizePayload(body) },
+    });
+    return res.status(403).json({ error: REGISTRATION_CLOSED_MESSAGE_DOMESTIC });
+  }
+
   await serverLog({
     event: "registration.domestic.attempt",
     category: "REGISTRATION",
@@ -562,6 +584,25 @@ app.post(
   async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
+
+  if (REGISTRATION_CLOSED) {
+    await serverLog({
+      event: "registration.foreigner.failure",
+      category: "REGISTRATION",
+      status: "FAILURE",
+      registrationType: "FOREIGNER",
+      applicantName: body.givenName && body.familyName
+        ? `${body.givenName} ${body.familyName}`
+        : body.name,
+      contact: body.phone || body.email || body.contact,
+      errorMessage: REGISTRATION_CLOSED_MESSAGE_FOREIGNER,
+      statusCode: 403,
+      ipAddress,
+      userAgent,
+      metadata: { payload: sanitizePayload(body) },
+    });
+    return res.status(403).json({ error: REGISTRATION_CLOSED_MESSAGE_FOREIGNER });
+  }
 
   await serverLog({
     event: "registration.foreigner.attempt",
