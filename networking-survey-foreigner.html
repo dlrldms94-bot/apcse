@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Global Networking Session Survey | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE Pre-Registration</a>
+    <a href="mypage.html" class="home-mypage-btn">My Page</a>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">Global Networking Session Pre-Registration Survey</h1>
+
+    <div class="card">
+      <form id="networkingSurveyForm" class="form-grid">
+        <div class="field">
+          <label>1. Name <span class="req">*</span></label>
+          <input type="text" name="name" required autocomplete="name">
+          <p class="hint">Please enter your name.</p>
+        </div>
+
+        <div class="field">
+          <label>2. Affiliation <span class="req">*</span></label>
+          <input type="text" name="affiliation" required autocomplete="organization">
+          <p class="hint">Please enter your affiliation or organization.</p>
+        </div>
+
+        <div class="field">
+          <label>3. Please select the session(s) you would like to attend. <span class="req">*</span></label>
+          <div class="checkbox-group">
+            <label class="checkbox-row">
+              <input type="checkbox" name="sessionDates" value="2026-10-15">
+              <span>Global Networking Session – October 15 (Thu)<br><span class="hint" data-slot-full-hint hidden>Full (20 participants)</span></span>
+            </label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="sessionDates" value="2026-10-16">
+              <span>Global Networking Session – October 16 (Fri)<br><span class="hint" data-slot-full-hint hidden>Full (20 participants)</span></span>
+            </label>
+          </div>
+          <p class="hint">You may select both sessions. Each session accepts 20 participants (first come, first served).</p>
+        </div>
+
+        <div class="conditional-block" data-topic-block hidden>
+          <div class="field">
+            <label>4. Please share a topic you would like to discuss during the networking session.</label>
+          </div>
+          <div class="field networking-topic-field" data-topic-for="2026-10-15" hidden>
+            <label for="discussionTopic20261015">October 15 (Thu) — discussion topic</label>
+            <textarea id="discussionTopic20261015" name="discussionTopic_2026-10-15" rows="4" placeholder="Enter your topic for the October 15 session."></textarea>
+          </div>
+          <div class="field networking-topic-field" data-topic-for="2026-10-16" hidden>
+            <label for="discussionTopic20261016">October 16 (Fri) — discussion topic</label>
+            <textarea id="discussionTopic20261016" name="discussionTopic_2026-10-16" rows="4" placeholder="Enter your topic for the October 16 session."></textarea>
+          </div>
+          <p class="hint">Key topics will be selected based on the responses received and used for discussion during the networking sessions.</p>
+        </div>
+
+        <div id="errorBox" class="alert error" hidden></div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Submit</button>
+          <a href="index.html" class="btn btn-secondary">Back</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/networking-survey-form.js"></script>
+  <script>
+    initNetworkingSurveyForm(document.getElementById("networkingSurveyForm"), {
+      type: "FOREIGNER",
+      completeUrl: "networking-survey-complete.html?lang=en",
+      messages: {
+        basicsRequired: "Please enter your name and affiliation and select at least one session.",
+        submitting: "Submitting...",
+        submitLabel: "Submit",
+        failure: "Submission failed. Please try again later.",
+        allSlotsFull: "All sessions are full (20 participants). Submission is not available.",
+      },
+    });
+  </script>
+</body>
+</html>

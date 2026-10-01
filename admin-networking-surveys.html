@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>네트워킹 수요조사 | APCSE 관리자</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+  <link rel="stylesheet" href="css/admin.css?v=1202">
+  <style>
+    body.admin-layout .site-header-inner,
+    body.admin-layout .page {
+      max-width: 1200px;
+    }
+    .summary-card.warning {
+      background: #fef2f2;
+    }
+    .summary-card.warning strong {
+      color: #b91c1c;
+    }
+  </style>
+</head>
+<body class="admin-layout">
+  <header class="site-header">
+    <div class="site-header-inner">
+      <a href="index.html" class="logo">APCSE 관리자</a>
+      <nav class="site-nav">
+        <a href="admin-registrations.html">신청 내역</a>
+        <a href="admin-networking-surveys.html" aria-current="page">수요조사</a>
+        <a href="admin-logs.html">로그</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">글로벌 네트워킹 세션 수요조사</h1>
+    <p class="page-desc">세션별 정원 20명(선착순) 기준 제출 내역입니다. 행을 클릭하면 상세 내용을 확인할 수 있습니다.</p>
+
+    <div id="loginSection" class="card login-box">
+      <form id="loginForm" class="form-grid">
+        <div class="field">
+          <label>관리자 비밀번호</label>
+          <input type="password" id="adminPassword" required>
+        </div>
+        <div id="loginError" class="alert error" hidden></div>
+        <button type="submit" class="btn btn-primary">로그인</button>
+      </form>
+    </div>
+
+    <div id="dashboardSection" class="card" hidden>
+      <div id="summaryGrid" class="summary-grid"></div>
+      <div class="filter-row">
+        <select id="typeFilter">
+          <option value="">전체 구분</option>
+          <option value="DOMESTIC">내국인</option>
+          <option value="FOREIGNER">외국인</option>
+        </select>
+        <input type="search" id="searchInput" placeholder="이름, 소속 검색" class="admin-search">
+        <button type="button" class="btn btn-secondary" id="refreshBtn">새로고침</button>
+        <button type="button" class="btn btn-secondary" id="exportBtn">CSV 다운로드</button>
+      </div>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th>제출일</th>
+              <th>구분</th>
+              <th>이름</th>
+              <th>소속</th>
+              <th>참석 세션</th>
+              <th>10/15 주제</th>
+              <th>10/16 주제</th>
+            </tr>
+          </thead>
+          <tbody id="surveyTableBody"></tbody>
+        </table>
+      </div>
+      <p id="emptyMessage" class="empty-message" hidden>조건에 맞는 제출 내역이 없습니다.</p>
+    </div>
+  </main>
+
+  <div id="detailModal" class="detail-modal" hidden>
+    <div class="detail-modal-backdrop" id="detailBackdrop"></div>
+    <div class="detail-modal-panel">
+      <div class="detail-modal-header">
+        <h2>수요조사 상세</h2>
+        <button type="button" class="detail-close" id="detailClose">×</button>
+      </div>
+      <div id="detailContent" class="detail-content"></div>
+    </div>
+  </div>
+
+  <script>
+    let adminPassword = "";
+    let allSurveys = [];
+    let capacitySlots = null;
+
+    function adminHeaders(json) {
+      const headers = { "x-admin-password": adminPassword.trim() };
+      if (json) headers["Content-Type"] = "application/json";
+      return headers;
+    }
+
+    async function readJsonResponse(res) {
+      const text = await res.text();
+      if (!text) return {};
+      try {
+        return JSON.parse(text);
+      } catch {
+        throw new Error("서버 응답을 해석할 수 없습니다.");
+      }
+    }
+
+    async function readAdminJson(res) {
+      const data = await readJsonResponse(res);
+      if (!res.ok) {
+        throw new Error(data.error || "요청에 실패했습니다.");
+      }
+      return data;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      return new Date(value).toLocaleString("ko-KR");
+    }
+
+    function formatSessionDates(dates) {
+      if (!dates?.length) return "-";
+      return dates.map((d) => d.replace("2026-10-", "10/")).join(", ");
+    }
+
+    function topicFor(row, date) {
+      const topics = row.discussionTopics || {};
+      return topics[date] || "";
+    }
+
+    function slotSummaryLabel(type, date) {
+      const typeLabel = type === "DOMESTIC" ? "내국인" : "외국인";
+      const dateLabel = date.replace("2026-10-", "10/");
+      return `${typeLabel} ${dateLabel}`;
+    }
+
+    function renderSummary(slots) {
+      if (!slots) return;
+      const cards = [];
+      for (const type of ["DOMESTIC", "FOREIGNER"]) {
+        for (const date of ["2026-10-15", "2026-10-16"]) {
+          const slot = slots[type][date];
+          const cls = slot.full ? "summary-card warning" : "summary-card";
+          cards.push(`
+            <div class="${cls}">
+              <p>${slotSummaryLabel(type, date)}</p>
+              <strong>${slot.count} / ${slot.limit}</strong>
+            </div>
+          `);
+        }
+      }
+      document.getElementById("summaryGrid").innerHTML = cards.join("");
+    }
+
+    function getFilteredSurveys() {
+      const type = document.getElementById("typeFilter").value;
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      return allSurveys.filter((row) => {
+        if (type && row.type !== type) return false;
+        if (!keyword) return true;
+        const haystack = [row.name, row.affiliation, row.discussionTopic]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(keyword);
+      });
+    }
+
+    function renderTable(rows) {
+      const tbody = document.getElementById("surveyTableBody");
+      const emptyMessage = document.getElementById("emptyMessage");
+      if (!rows.length) {
+        tbody.innerHTML = "";
+        emptyMessage.hidden = false;
+        return;
+      }
+      emptyMessage.hidden = true;
+      tbody.innerHTML = rows
+        .map(
+          (row) => `
+        <tr class="clickable-row" data-id="${row.id}">
+          <td>${formatDate(row.createdAt)}</td>
+          <td>${row.type === "DOMESTIC" ? "내국인" : "외국인"}</td>
+          <td>${escapeHtml(row.name)}</td>
+          <td>${escapeHtml(row.affiliation)}</td>
+          <td>${formatSessionDates(row.sessionDates)}</td>
+          <td>${escapeHtml(topicFor(row, "2026-10-15")) || "-"}</td>
+          <td>${escapeHtml(topicFor(row, "2026-10-16")) || "-"}</td>
+        </tr>
+      `,
+        )
+        .join("");
+
+      tbody.querySelectorAll(".clickable-row").forEach((tr) => {
+        tr.addEventListener("click", () => {
+          const row = allSurveys.find((item) => item.id === tr.dataset.id);
+          if (row) openDetail(row);
+        });
+      });
+    }
+
+    function detailRow(label, value) {
+      if (value === null || value === undefined || value === "") return "";
+      return `<div class="detail-row"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`;
+    }
+
+    function openDetail(row) {
+      const lines = [
+        detailRow("제출 ID", row.id),
+        detailRow("구분", row.type === "DOMESTIC" ? "내국인" : "외국인"),
+        detailRow("제출일", formatDate(row.createdAt)),
+        detailRow("이름", row.name),
+        detailRow("소속", row.affiliation),
+        detailRow("참석 세션", formatSessionDates(row.sessionDates)),
+        detailRow("10/15 논의 주제", topicFor(row, "2026-10-15")),
+        detailRow("10/16 논의 주제", topicFor(row, "2026-10-16")),
+        detailRow("주제(통합)", row.discussionTopic),
+      ].filter(Boolean);
+      document.getElementById("detailContent").innerHTML = `<dl class="detail-list">${lines.join("")}</dl>`;
+      document.getElementById("detailModal").hidden = false;
+    }
+
+    function closeDetail() {
+      document.getElementById("detailModal").hidden = true;
+    }
+
+    function renderDashboard() {
+      renderSummary(capacitySlots);
+      renderTable(getFilteredSurveys());
+    }
+
+    async function loadSurveys() {
+      const res = await fetch("/api/admin/networking-surveys", { headers: adminHeaders() });
+      const data = await readAdminJson(res);
+      allSurveys = data.surveys || [];
+      capacitySlots = data.slots || null;
+      renderDashboard();
+    }
+
+    const CSV_HEADERS = [
+      "제출일",
+      "구분",
+      "이름",
+      "소속",
+      "참석 세션",
+      "10/15 논의 주제",
+      "10/16 논의 주제",
+      "주제(통합)",
+      "제출ID",
+    ];
+
+    function surveyToCsvRow(row) {
+      return [
+        formatDate(row.createdAt),
+        row.type === "DOMESTIC" ? "내국인" : "외국인",
+        row.name,
+        row.affiliation,
+        formatSessionDates(row.sessionDates),
+        topicFor(row, "2026-10-15"),
+        topicFor(row, "2026-10-16"),
+        row.discussionTopic || "",
+        row.id,
+      ];
+    }
+
+    function downloadCsv() {
+      const rows = getFilteredSurveys();
+      const csvRows = [
+        CSV_HEADERS.join(","),
+        ...rows.map((row) =>
+          surveyToCsvRow(row)
+            .map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`)
+            .join(","),
+        ),
+      ];
+      const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `apcse-networking-surveys-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
+
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      adminPassword = document.getElementById("adminPassword").value.trim();
+      try {
+        await loadSurveys();
+        document.getElementById("loginSection").hidden = true;
+        document.getElementById("dashboardSection").hidden = false;
+      } catch (error) {
+        const loginError = document.getElementById("loginError");
+        loginError.textContent = error.message;
+        loginError.hidden = false;
+      }
+    });
+
+    document.getElementById("refreshBtn").addEventListener("click", loadSurveys);
+    document.getElementById("exportBtn").addEventListener("click", downloadCsv);
+    document.getElementById("typeFilter").addEventListener("change", renderDashboard);
+    document.getElementById("searchInput").addEventListener("input", renderDashboard);
+    document.getElementById("detailClose").addEventListener("click", closeDetail);
+    document.getElementById("detailBackdrop").addEventListener("click", closeDetail);
+  </script>
+</body>
+</html>

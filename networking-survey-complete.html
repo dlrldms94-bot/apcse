@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>수요조사 제출 완료 | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/form.css">
+</head>
+<body>
+  <header class="home-header">
+    <a href="index.html" class="home-logo" id="logoText">APCSE 사전등록</a>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title" id="title">제출 완료</h1>
+    <div class="card">
+      <p id="desc" style="color:#475569;line-height:1.7;text-align:left;"></p>
+      <div class="actions complete-home-actions">
+        <a href="index.html" class="btn btn-primary" id="homeBtn">홈으로</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const isEn = new URLSearchParams(location.search).get("lang") === "en";
+    if (isEn) {
+      document.documentElement.lang = "en";
+      document.title = "Survey Submitted | APCSE";
+      document.getElementById("logoText").textContent = "APCSE Pre-Registration";
+      document.getElementById("title").textContent = "Thank You";
+      document.getElementById("desc").textContent =
+        "Your Global Networking Session pre-registration survey has been submitted successfully. Thank you for sharing your interest.";
+      document.getElementById("homeBtn").textContent = "Home";
+    } else {
+      document.getElementById("desc").textContent =
+        "글로벌 네트워킹 세션 사전 수요조사가 정상적으로 제출되었습니다. 참여해 주셔서 감사합니다.";
+    }
+  </script>
+</body>
+</html>

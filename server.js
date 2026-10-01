@@ -20,6 +20,10 @@ const HTML_PAGES = [
   "admin-logs.html",
   "admin-registrations.html",
   "preview.html",
+  "networking-survey-domestic.html",
+  "networking-survey-foreigner.html",
+  "networking-survey-complete.html",
+  "admin-networking-surveys.html",
 ];
 
 const app = express();
@@ -55,7 +59,9 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-09-23-closed";
+const BUILD_VERSION = "2026-10-01-networking-admin";
+const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
+const NETWORKING_SESSION_CAPACITY = 20;
 const REGISTRATION_CLOSED = true;
 const REGISTRATION_CLOSED_MESSAGE_DOMESTIC =
   "국내 참가자 사전등록이 마감되었습니다. 정원 마감으로 인해 사전등록이 종료되었습니다.";
@@ -355,6 +361,191 @@ function trimOptionalText(value) {
   const trimmed = String(value ?? "").trim();
   return trimmed || null;
 }
+
+function serializeNetworkingSurvey(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    name: row.name,
+    affiliation: row.affiliation,
+    sessionDates: row.session_dates || [],
+    discussionTopic: row.discussion_topic,
+    discussionTopics: row.discussion_topics || {},
+    createdAt: row.created_at,
+  };
+}
+
+async function countNetworkingSlot(db, type, sessionDate) {
+  const { rows } = await db.query(
+    `SELECT COUNT(*)::int AS count FROM networking_surveys WHERE type = $1 AND $2 = ANY(session_dates)`,
+    [type, sessionDate],
+  );
+  return rows[0].count;
+}
+
+async function getNetworkingCapacityMap(db = pool) {
+  const slots = { DOMESTIC: {}, FOREIGNER: {} };
+  for (const type of ["DOMESTIC", "FOREIGNER"]) {
+    for (const date of NETWORKING_SESSION_DATES) {
+      const count = await countNetworkingSlot(db, type, date);
+      slots[type][date] = {
+        limit: NETWORKING_SESSION_CAPACITY,
+        count,
+        remaining: Math.max(NETWORKING_SESSION_CAPACITY - count, 0),
+        full: count >= NETWORKING_SESSION_CAPACITY,
+      };
+    }
+  }
+  return slots;
+}
+
+function networkingSessionLabel(date, type) {
+  if (type === "DOMESTIC") {
+    return date === "2026-10-15" ? "10월 15일(목)" : "10월 16일(금)";
+  }
+  return date === "2026-10-15" ? "October 15 (Thu)" : "October 16 (Fri)";
+}
+
+function formatNetworkingFullMessage(type, fullDates) {
+  const labels = fullDates.map((date) => networkingSessionLabel(date, type));
+  if (type === "DOMESTIC") {
+    return `${labels.join(", ")} 세션은 정원(${NETWORKING_SESSION_CAPACITY}명)이 마감되어 제출할 수 없습니다.`;
+  }
+  return `${labels.join(", ")} session(s) are full (${NETWORKING_SESSION_CAPACITY} participants). Submission is not available.`;
+}
+
+app.get("/api/networking-survey/capacity", async (req, res) => {
+  try {
+    const slots = await getNetworkingCapacityMap();
+    return res.json({ capacity: NETWORKING_SESSION_CAPACITY, slots });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/networking-survey", async (req, res) => {
+  const { ipAddress, userAgent } = getRequestMeta(req);
+  const body = req.body || {};
+  const { type, name, affiliation, sessionDates, discussionTopic, discussionTopics } = body;
+
+  if (type !== "DOMESTIC" && type !== "FOREIGNER") {
+    return res.status(400).json({ error: "Invalid survey type." });
+  }
+
+  const trimmedName = String(name ?? "").trim();
+  const trimmedAffiliation = String(affiliation ?? "").trim();
+  if (!trimmedName || !trimmedAffiliation) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "이름과 소속을 입력해주세요."
+        : "Please enter your name and affiliation.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  if (
+    !Array.isArray(sessionDates) ||
+    !sessionDates.length ||
+    !sessionDates.every((date) => NETWORKING_SESSION_DATES.has(date))
+  ) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "참석 희망 세션을 올바르게 선택해주세요."
+        : "Please select valid session(s).";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const normalizedTopics = {};
+  if (discussionTopics && typeof discussionTopics === "object" && !Array.isArray(discussionTopics)) {
+    for (const date of sessionDates) {
+      if (!NETWORKING_SESSION_DATES.has(date)) continue;
+      const value = trimOptionalText(discussionTopics[date]);
+      if (value) normalizedTopics[date] = value;
+    }
+  }
+
+  const legacyTopic =
+    trimOptionalText(discussionTopic) ||
+    Object.entries(normalizedTopics)
+      .map(([date, text]) => {
+        const label = date.replace("2026-10-", "10/");
+        return `${label}: ${text}`;
+      })
+      .join("; ") ||
+    null;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const fullDates = [];
+    for (const date of sessionDates) {
+      await client.query(`SELECT pg_advisory_xact_lock(hashtext($1::text))`, [
+        `networking:${type}:${date}`,
+      ]);
+      const count = await countNetworkingSlot(client, type, date);
+      if (count >= NETWORKING_SESSION_CAPACITY) {
+        fullDates.push(date);
+      }
+    }
+
+    if (fullDates.length) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        error: formatNetworkingFullMessage(type, fullDates),
+        fullSessions: fullDates,
+      });
+    }
+
+    const result = await client.query(
+      `INSERT INTO networking_surveys (type, name, affiliation, session_dates, discussion_topic, discussion_topics)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
+      [
+        type,
+        trimmedName,
+        trimmedAffiliation,
+        sessionDates,
+        legacyTopic,
+        Object.keys(normalizedTopics).length ? normalizedTopics : null,
+      ],
+    );
+
+    await client.query("COMMIT");
+
+    await serverLog({
+      event: "networking_survey.success",
+      category: "REGISTRATION",
+      status: "SUCCESS",
+      registrationType: type,
+      registrationId: result.rows[0].id,
+      applicantName: trimmedName,
+      ipAddress,
+      userAgent,
+      statusCode: 200,
+    });
+
+    return res.json({ id: result.rows[0].id, message: "Submitted." });
+  } catch {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // ignore rollback failure
+    }
+    await serverLog({
+      event: "networking_survey.failure",
+      category: "REGISTRATION",
+      status: "FAILURE",
+      registrationType: type,
+      applicantName: trimmedName,
+      ipAddress,
+      userAgent,
+      statusCode: 500,
+    });
+    return res.status(500).json({ error: "Server error" });
+  } finally {
+    client.release();
+  }
+});
 
 app.post("/api/register/domestic", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
@@ -1468,6 +1659,26 @@ app.get("/api/admin/registrations", async (req, res) => {
       "SELECT * FROM registrations ORDER BY created_at DESC",
     );
     return res.json({ registrations: rows.map(serializeRegistration) });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/admin/networking-surveys", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const [surveysResult, slots] = await Promise.all([
+      pool.query("SELECT * FROM networking_surveys ORDER BY created_at DESC"),
+      getNetworkingCapacityMap(),
+    ]);
+    return res.json({
+      surveys: surveysResult.rows.map(serializeNetworkingSurvey),
+      slots,
+      capacity: NETWORKING_SESSION_CAPACITY,
+    });
   } catch {
     return res.status(500).json({ error: "Server error" });
   }

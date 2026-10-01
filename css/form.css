@@ -219,6 +219,10 @@
   min-width: 0;
 }
 
+.networking-topic-field + .networking-topic-field {
+  margin-top: 4px;
+}
+
 .conditional-block {
   margin-top: 12px;
   padding: 16px;

@@ -14,25 +14,45 @@
     <a href="mypage.html" class="home-mypage-btn">마이페이지</a>
   </header>
 
-  <main class="home-main">
-    <h1 class="home-title">사전등록</h1>
-    <p class="home-desc">참가 유형을 선택해 주세요.</p>
+  <main class="home-main home-main-split">
+    <div class="home-split-grid">
+      <section class="home-split-column" aria-labelledby="preRegistrationTitle">
+        <h1 class="home-column-title" id="preRegistrationTitle">APCSE<br>사전등록</h1>
+        <p class="home-column-desc">참가 유형을 선택해 주세요.</p>
+        <div class="home-choice-panel">
+          <div class="home-choice-grid home-choice-grid-stacked">
+            <a href="#" class="home-choice primary" id="domesticChoice" role="button">
+              내국인 사전 등록
+              <small>Domestic Pre-Registration</small>
+            </a>
+            <a href="#" class="home-choice secondary" id="foreignerChoice" role="button">
+              International<br>Pre-registration
+            </a>
+          </div>
+        </div>
+      </section>
 
-    <div class="home-choice-panel">
-      <div class="home-choice-grid">
-        <a href="#" class="home-choice primary" id="domesticChoice" role="button">
-          내국인 사전 등록
-          <small>Domestic Pre-Registration</small>
-        </a>
-        <a href="#" class="home-choice secondary" id="foreignerChoice" role="button">
-          International<br>Pre-registration
-        </a>
-      </div>
+      <section class="home-split-column" aria-labelledby="networkingTitle">
+        <h1 class="home-column-title" id="networkingTitle">
+          글로벌 네트워킹 세션<br>사전 수요조사
+        </h1>
+        <p class="home-column-desc home-column-desc-en">Global Networking Session Pre-Registration Survey</p>
+        <div class="home-choice-panel">
+          <div class="home-choice-grid home-choice-grid-stacked">
+            <a href="networking-survey-domestic.html" class="home-choice primary">
+              내국인 사전 수요조사
+              <small>Domestic Pre-Registration Survey</small>
+            </a>
+            <a href="networking-survey-foreigner.html" class="home-choice secondary">
+              International<br>Pre-Registration Survey
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   </main>
 
   <footer class="home-footer">
-    <!-- 발주처 메인 사이트 URL로 href 변경 -->
     <a href="https://apcse.kosac.re.kr/2026/ko" class="home-return">
       <span class="home-return-icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
