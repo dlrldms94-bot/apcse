@@ -59,9 +59,14 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-01-networking-admin";
+const BUILD_VERSION = "2026-10-02-networking-survey-not-open";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
+const NETWORKING_SURVEY_CLOSED = true;
+const NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC =
+  "글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
+const NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER =
+  "Global Networking Session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
 const REGISTRATION_CLOSED = true;
 const REGISTRATION_CLOSED_MESSAGE_DOMESTIC =
   "국내 참가자 사전등록이 마감되었습니다. 정원 마감으로 인해 사전등록이 종료되었습니다.";
@@ -427,6 +432,14 @@ app.post("/api/networking-survey", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
   const { type, name, affiliation, sessionDates, discussionTopic, discussionTopics } = body;
+
+  if (NETWORKING_SURVEY_CLOSED) {
+    const errorMessage =
+      type === "FOREIGNER"
+        ? NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER
+        : NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC;
+    return res.status(403).json({ error: errorMessage });
+  }
 
   if (type !== "DOMESTIC" && type !== "FOREIGNER") {
     return res.status(400).json({ error: "Invalid survey type." });

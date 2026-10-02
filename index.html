@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/home.css">
   <script src="js/registration-schedule.js"></script>
+  <script src="js/networking-survey-schedule.js"></script>
 </head>
 <body class="home-page">
   <header class="home-header">
@@ -39,11 +40,11 @@
         <p class="home-column-desc home-column-desc-en">Global Networking Session Pre-Registration Survey</p>
         <div class="home-choice-panel">
           <div class="home-choice-grid home-choice-grid-stacked">
-            <a href="networking-survey-domestic.html" class="home-choice primary">
+            <a href="#" class="home-choice primary" id="networkingDomesticChoice" role="button">
               내국인 사전 수요조사
               <small>Domestic Pre-Registration Survey</small>
             </a>
-            <a href="networking-survey-foreigner.html" class="home-choice secondary">
+            <a href="#" class="home-choice secondary" id="networkingForeignerChoice" role="button">
               International<br>Pre-Registration Survey
             </a>
           </div>
@@ -71,6 +72,28 @@
         <p>정원 마감으로 인해 사전등록이 종료되었습니다.<br>APCSE 2026에 보내주신 많은 관심과 성원에 감사드립니다.</p>
       </div>
       <button type="button" class="home-notice-btn" id="domesticNoticeClose">확인</button>
+    </div>
+  </div>
+
+  <div id="networkingDomesticNotice" class="home-notice" hidden>
+    <div class="home-notice-backdrop" id="networkingDomesticNoticeBackdrop"></div>
+    <div class="home-notice-panel" role="dialog" aria-labelledby="networkingDomesticNoticeTitle">
+      <div id="networkingDomesticNoticeTitle" class="home-notice-text">
+        <p>글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다.</p>
+        <p>접수 시작 일정은 추후 공지드릴 예정입니다.<br>APCSE 2026에 보내주신 관심에 감사드립니다.</p>
+      </div>
+      <button type="button" class="home-notice-btn" id="networkingDomesticNoticeClose">확인</button>
+    </div>
+  </div>
+
+  <div id="networkingForeignerNotice" class="home-notice" hidden>
+    <div class="home-notice-backdrop" id="networkingForeignerNoticeBackdrop"></div>
+    <div class="home-notice-panel" role="dialog" aria-labelledby="networkingForeignerNoticeTitle" lang="en">
+      <div id="networkingForeignerNoticeTitle" class="home-notice-text">
+        <p>Global Networking Session Pre-Registration Survey Is Not Yet Open.</p>
+        <p>The survey opening schedule will be announced soon.<br>Thank you for your interest in APCSE 2026.</p>
+      </div>
+      <button type="button" class="home-notice-btn" id="networkingForeignerNoticeClose">OK</button>
     </div>
   </div>
 
@@ -141,6 +164,30 @@
       if (!RegistrationSchedule.REGISTRATION_CLOSED) {
         scheduleAutoOpen("foreignerChoice", "register-foreigner.html", RegistrationSchedule.REGISTRATION_OPEN_AT);
       }
+    }
+
+    if (NetworkingSurveySchedule.isDomesticNetworkingSurveyOpen()) {
+      enableChoiceLink("networkingDomesticChoice", "networking-survey-domestic.html");
+    } else {
+      bindNotice(
+        "networkingDomesticNotice",
+        "networkingDomesticChoice",
+        "networkingDomesticNoticeClose",
+        "networkingDomesticNoticeBackdrop",
+        "networking-domestic"
+      );
+    }
+
+    if (NetworkingSurveySchedule.isForeignerNetworkingSurveyOpen()) {
+      enableChoiceLink("networkingForeignerChoice", "networking-survey-foreigner.html");
+    } else {
+      bindNotice(
+        "networkingForeignerNotice",
+        "networkingForeignerChoice",
+        "networkingForeignerNoticeClose",
+        "networkingForeignerNoticeBackdrop",
+        "networking-foreigner"
+      );
     }
   </script>
 </body>
