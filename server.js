@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-02-workshop-admin";
+const BUILD_VERSION = "2026-10-02-home-copy";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
