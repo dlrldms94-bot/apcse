@@ -39,33 +39,57 @@
         </div>
 
         <div class="field">
-          <label>3. Please select the session(s) you would like to attend. <span class="req">*</span></label>
-          <div class="checkbox-group">
-            <label class="checkbox-row">
-              <input type="checkbox" name="sessionDates" value="2026-10-15">
+          <label>3. Please select the date you would like to attend. <span class="req">*</span></label>
+          <div class="radio-group">
+            <label class="radio-row">
+              <input type="radio" name="sessionDate" value="2026-10-15" required>
               <span>Global Networking Session – October 15 (Thu)<br><span class="hint" data-slot-full-hint hidden>Full (20 participants)</span></span>
             </label>
-            <label class="checkbox-row">
-              <input type="checkbox" name="sessionDates" value="2026-10-16">
+            <label class="radio-row">
+              <input type="radio" name="sessionDate" value="2026-10-16">
               <span>Global Networking Session – October 16 (Fri)<br><span class="hint" data-slot-full-hint hidden>Full (20 participants)</span></span>
             </label>
           </div>
-          <p class="hint">You may select both sessions. Each session accepts 20 participants (first come, first served).</p>
+          <p class="hint">Please select either October 15 (Thu) or October 16 (Fri). Each session accepts 20 participants (first come, first served).</p>
         </div>
 
-        <div class="conditional-block" data-topic-block hidden>
+        <div class="field networking-topics-info">
+          <label>4. Confirmed discussion topics</label>
+          <p class="networking-topics-intro">(The same six topics will be discussed on both October 15 (Thu) and October 16 (Fri).)</p>
+          <ul class="networking-topics-list">
+            <li>① Should generative AI be fully permitted in schools?</li>
+            <li>② Closing the AI education gap: Which should come first—expanding infrastructure or strengthening teachers’ capabilities?</li>
+            <li>③ AI education: Which is more important—“With AI” (the ability to use AI) or “About AI” (the ability to understand and critically evaluate AI)?</li>
+            <li>④ Will gaps in AI competency lead to gaps in employment and wages? Can education prevent this?</li>
+            <li>⑤ Improving access to AI education: Which should come first—providing devices or localizing content and language?</li>
+            <li>⑥ Should Universal Design for Learning (UDL) be incorporated into AI education from the design stage?</li>
+          </ul>
+        </div>
+
+        <div class="conditional-block" data-followup-block hidden>
           <div class="field">
-            <label>4. Please share a topic you would like to discuss during the networking session.</label>
+            <label>5. Would you like to participate as a moderator for the Global Networking Session? <span class="req">*</span></label>
+            <p class="hint">(Moderator applications will be reviewed by the organizers, and selected moderators will be notified individually.)</p>
+            <div class="radio-group">
+              <label class="radio-row">
+                <input type="radio" name="moderatorInterest" value="yes">
+                <span>Yes</span>
+              </label>
+              <label class="radio-row">
+                <input type="radio" name="moderatorInterest" value="no">
+                <span>No</span>
+              </label>
+            </div>
           </div>
-          <div class="field networking-topic-field" data-topic-for="2026-10-15" hidden>
-            <label for="discussionTopic20261015">October 15 (Thu) — discussion topic</label>
-            <textarea id="discussionTopic20261015" name="discussionTopic_2026-10-15" rows="4" placeholder="Enter your topic for the October 15 session."></textarea>
+
+          <div class="conditional-block" data-moderator-topics-block hidden>
+            <div class="field">
+              <label>Please select the topic(s) you would be interested in moderating. <span class="req">*</span></label>
+              <p class="hint">Multiple selections are allowed.</p>
+              <div class="checkbox-group networking-moderator-topics" data-moderator-topics></div>
+            </div>
+            <p class="hint networking-moderator-footnote">Moderator applications will be reviewed by the organizers, and selected moderators will be notified individually.</p>
           </div>
-          <div class="field networking-topic-field" data-topic-for="2026-10-16" hidden>
-            <label for="discussionTopic20261016">October 16 (Fri) — discussion topic</label>
-            <textarea id="discussionTopic20261016" name="discussionTopic_2026-10-16" rows="4" placeholder="Enter your topic for the October 16 session."></textarea>
-          </div>
-          <p class="hint">Key topics will be selected based on the responses received and used for discussion during the networking sessions.</p>
         </div>
 
         <div id="errorBox" class="alert error" hidden></div>
@@ -78,13 +102,16 @@
     </div>
   </main>
 
+  <script src="js/networking-survey-topics.js"></script>
   <script src="js/networking-survey-form.js"></script>
   <script>
     initNetworkingSurveyForm(document.getElementById("networkingSurveyForm"), {
       type: "FOREIGNER",
+      lang: "en",
       completeUrl: "networking-survey-complete.html?lang=en",
       messages: {
-        basicsRequired: "Please enter your name and affiliation and select at least one session.",
+        basicsRequired: "Please enter your name and affiliation, select a session date, and indicate whether you wish to serve as a moderator.",
+        moderatorTopicsRequired: "Please select at least one topic you would like to moderate.",
         submitting: "Submitting...",
         submitLabel: "Submit",
         failure: "Submission failed. Please try again later.",

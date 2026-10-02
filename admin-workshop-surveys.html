@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>네트워킹 수요조사 | APCSE 관리자</title>
+  <title>워크숍 수요조사 | APCSE 관리자</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/form.css">
@@ -19,6 +19,10 @@
     .summary-card.warning strong {
       color: #b91c1c;
     }
+    .summary-card p {
+      font-size: 12px;
+      line-height: 1.4;
+    }
   </style>
 </head>
 <body class="admin-layout">
@@ -27,16 +31,16 @@
       <a href="index.html" class="logo">APCSE 관리자</a>
       <nav class="site-nav">
         <a href="admin-registrations.html">신청 내역</a>
-        <a href="admin-networking-surveys.html" aria-current="page">네트워킹 수요조사</a>
-        <a href="admin-workshop-surveys.html">워크숍 수요조사</a>
+        <a href="admin-networking-surveys.html">네트워킹 수요조사</a>
+        <a href="admin-workshop-surveys.html" aria-current="page">워크숍 수요조사</a>
         <a href="admin-logs.html">로그</a>
       </nav>
     </div>
   </header>
 
   <main class="page">
-    <h1 class="page-title">글로벌 네트워킹 세션 수요조사</h1>
-    <p class="page-desc">세션별 정원 20명(선착순) 기준 제출 내역입니다. 행을 클릭하면 상세 내용을 확인할 수 있습니다.</p>
+    <h1 class="page-title">워크숍 세션 수요조사</h1>
+    <p class="page-desc">워크숍별 정원(내국인 20명 · 외국인 10명, 선착순) 기준 제출 내역입니다. 행을 클릭하면 상세 내용을 확인할 수 있습니다.</p>
 
     <div id="loginSection" class="card login-box">
       <form id="loginForm" class="form-grid">
@@ -69,9 +73,7 @@
               <th>구분</th>
               <th>이름</th>
               <th>소속</th>
-              <th>참석 날짜</th>
-              <th>모더레이터</th>
-              <th>모더레이터 희망 주제</th>
+              <th>선택 워크숍</th>
             </tr>
           </thead>
           <tbody id="surveyTableBody"></tbody>
@@ -92,7 +94,7 @@
     </div>
   </div>
 
-  <script src="js/networking-survey-topics.js"></script>
+  <script src="js/workshop-sessions.js"></script>
   <script>
     let adminPassword = "";
     let allSurveys = [];
@@ -135,51 +137,40 @@
       return new Date(value).toLocaleString("ko-KR");
     }
 
-    function formatSessionDates(dates) {
-      if (!dates?.length) return "-";
-      return dates.map((d) => d.replace("2026-10-", "10/")).join(", ");
+    function sessionLabelKo(sessionId) {
+      const session = WorkshopSessions?.getWorkshopSession(sessionId);
+      return session?.labelKo || sessionId;
     }
 
-    function formatModeratorInterest(row) {
-      if (row.moderatorInterest === true) return "예";
-      if (row.moderatorInterest === false) return "아니요";
-      return "-";
+    function sessionShortLabel(sessionId) {
+      const full = sessionLabelKo(sessionId);
+      const match = full.match(/^\d+월 \d+일\([^)]+\) \d+:\d+/);
+      return match ? match[0] : full.slice(0, 24);
     }
 
-    function formatModeratorTopics(row) {
-      const ids = row.moderatorTopicIds || [];
+    function formatWorkshopSessions(row, short) {
+      const ids = row.workshopSessionIds || [];
       if (!ids.length) return "-";
-      if (typeof NetworkingSurveyTopics !== "undefined") {
-        return NetworkingSurveyTopics.formatModeratorTopicLabels(ids, "ko").join(" / ");
-      }
-      return ids.join(", ");
+      const formatter = short ? sessionShortLabel : sessionLabelKo;
+      return ids.map(formatter).join(short ? ", " : "\n");
     }
 
-    function legacyDiscussionSummary(row) {
-      const topics = row.discussionTopics || {};
-      const parts = ["2026-10-15", "2026-10-16"]
-        .map((date) => topics[date])
-        .filter(Boolean);
-      if (parts.length) return parts.join(" / ");
-      return row.discussionTopic || "";
-    }
-
-    function slotSummaryLabel(type, date) {
+    function slotSummaryLabel(type, sessionId) {
       const typeLabel = type === "DOMESTIC" ? "내국인" : "외국인";
-      const dateLabel = date.replace("2026-10-", "10/");
-      return `${typeLabel} ${dateLabel}`;
+      return `${typeLabel} · ${sessionShortLabel(sessionId)}`;
     }
 
     function renderSummary(slots) {
-      if (!slots) return;
+      if (!slots || typeof WorkshopSessions === "undefined") return;
       const cards = [];
       for (const type of ["DOMESTIC", "FOREIGNER"]) {
-        for (const date of ["2026-10-15", "2026-10-16"]) {
-          const slot = slots[type][date];
+        for (const session of WorkshopSessions.WORKSHOP_SESSIONS) {
+          const slot = slots[type]?.[session.id];
+          if (!slot) continue;
           const cls = slot.full ? "summary-card warning" : "summary-card";
           cards.push(`
             <div class="${cls}">
-              <p>${slotSummaryLabel(type, date)}</p>
+              <p>${escapeHtml(slotSummaryLabel(type, session.id))}</p>
               <strong>${slot.count} / ${slot.limit}</strong>
             </div>
           `);
@@ -194,7 +185,7 @@
       return allSurveys.filter((row) => {
         if (type && row.type !== type) return false;
         if (!keyword) return true;
-        const haystack = [row.name, row.affiliation, formatModeratorTopics(row), legacyDiscussionSummary(row)]
+        const haystack = [row.name, row.affiliation, formatWorkshopSessions(row, false)]
           .filter(Boolean)
           .join(" ")
           .toLowerCase();
@@ -219,9 +210,7 @@
           <td>${row.type === "DOMESTIC" ? "내국인" : "외국인"}</td>
           <td>${escapeHtml(row.name)}</td>
           <td>${escapeHtml(row.affiliation)}</td>
-          <td>${formatSessionDates(row.sessionDates)}</td>
-          <td>${formatModeratorInterest(row)}</td>
-          <td>${escapeHtml(formatModeratorTopics(row))}</td>
+          <td>${escapeHtml(formatWorkshopSessions(row, true))}</td>
         </tr>
       `,
         )
@@ -241,16 +230,14 @@
     }
 
     function openDetail(row) {
+      const sessionSummary = (row.workshopSessionIds || []).map(sessionLabelKo).join(" / ");
       const lines = [
         detailRow("제출 ID", row.id),
         detailRow("구분", row.type === "DOMESTIC" ? "내국인" : "외국인"),
         detailRow("제출일", formatDate(row.createdAt)),
         detailRow("이름", row.name),
         detailRow("소속", row.affiliation),
-        detailRow("참석 날짜", formatSessionDates(row.sessionDates)),
-        detailRow("모더레이터 참여", formatModeratorInterest(row)),
-        detailRow("모더레이터 희망 주제", formatModeratorTopics(row)),
-        detailRow("(구) 자유 서술 주제", legacyDiscussionSummary(row)),
+        detailRow("선택 워크숍", sessionSummary || "-"),
       ].filter(Boolean);
       document.getElementById("detailContent").innerHTML = `<dl class="detail-list">${lines.join("")}</dl>`;
       document.getElementById("detailModal").hidden = false;
@@ -266,35 +253,23 @@
     }
 
     async function loadSurveys() {
-      const res = await fetch("/api/admin/networking-surveys", { headers: adminHeaders() });
+      const res = await fetch("/api/admin/workshop-surveys", { headers: adminHeaders() });
       const data = await readAdminJson(res);
       allSurveys = data.surveys || [];
       capacitySlots = data.slots || null;
       renderDashboard();
     }
 
-    const CSV_HEADERS = [
-      "제출일",
-      "구분",
-      "이름",
-      "소속",
-      "참석 날짜",
-      "모더레이터 참여",
-      "모더레이터 희망 주제",
-      "구 자유서술주제",
-      "제출ID",
-    ];
+    const CSV_HEADERS = ["제출일", "구분", "이름", "소속", "선택 워크숍", "제출ID"];
 
     function surveyToCsvRow(row) {
+      const sessions = (row.workshopSessionIds || []).map(sessionLabelKo).join(" | ");
       return [
         formatDate(row.createdAt),
         row.type === "DOMESTIC" ? "내국인" : "외국인",
         row.name,
         row.affiliation,
-        formatSessionDates(row.sessionDates),
-        formatModeratorInterest(row),
-        formatModeratorTopics(row),
-        legacyDiscussionSummary(row),
+        sessions,
         row.id,
       ];
     }
@@ -312,7 +287,7 @@
       const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `apcse-networking-surveys-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `apcse-workshop-surveys-${new Date().toISOString().slice(0, 10)}.csv`;
       link.click();
       URL.revokeObjectURL(link.href);
     }

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="css/home.css">
   <script src="js/registration-schedule.js"></script>
   <script src="js/networking-survey-schedule.js"></script>
+  <script src="js/workshop-survey-schedule.js"></script>
 </head>
 <body class="home-page">
   <header class="home-header">
@@ -16,9 +17,9 @@
   </header>
 
   <main class="home-main home-main-split">
-    <div class="home-split-grid">
+    <div class="home-split-grid home-split-grid--triple">
       <section class="home-split-column" aria-labelledby="preRegistrationTitle">
-        <h1 class="home-column-title" id="preRegistrationTitle">APCSE<br>사전등록</h1>
+        <h1 class="home-column-title" id="preRegistrationTitle">사전예약</h1>
         <p class="home-column-desc">참가 유형을 선택해 주세요.</p>
         <div class="home-choice-panel">
           <div class="home-choice-grid home-choice-grid-stacked">
@@ -37,14 +38,30 @@
         <h1 class="home-column-title" id="networkingTitle">
           글로벌 네트워킹 세션<br>사전 수요조사
         </h1>
-        <p class="home-column-desc home-column-desc-en">Global Networking Session Pre-Registration Survey</p>
+        <p class="home-column-desc">&nbsp;</p>
         <div class="home-choice-panel">
           <div class="home-choice-grid home-choice-grid-stacked">
             <a href="#" class="home-choice primary" id="networkingDomesticChoice" role="button">
               내국인 사전 수요조사
-              <small>Domestic Pre-Registration Survey</small>
             </a>
             <a href="#" class="home-choice secondary" id="networkingForeignerChoice" role="button">
+              International<br>Pre-Registration Survey
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="home-split-column" aria-labelledby="workshopTitle">
+        <h1 class="home-column-title" id="workshopTitle">
+          워크숍 세션<br>사전 수요조사
+        </h1>
+        <p class="home-column-desc">&nbsp;</p>
+        <div class="home-choice-panel">
+          <div class="home-choice-grid home-choice-grid-stacked">
+            <a href="#" class="home-choice primary" id="workshopDomesticChoice" role="button">
+              내국인 사전 수요조사
+            </a>
+            <a href="#" class="home-choice secondary" id="workshopForeignerChoice" role="button">
               International<br>Pre-Registration Survey
             </a>
           </div>
@@ -188,6 +205,20 @@
         "networkingForeignerNoticeBackdrop",
         "networking-foreigner"
       );
+    }
+
+    if (WorkshopSurveySchedule.isDomesticWorkshopSurveyOpen()) {
+      enableChoiceLink("workshopDomesticChoice", "workshop-survey-domestic.html");
+    } else {
+      document.getElementById("workshopDomesticChoice").href = "#";
+      document.getElementById("workshopDomesticChoice").setAttribute("role", "button");
+    }
+
+    if (WorkshopSurveySchedule.isForeignerWorkshopSurveyOpen()) {
+      enableChoiceLink("workshopForeignerChoice", "workshop-survey-foreigner.html");
+    } else {
+      document.getElementById("workshopForeignerChoice").href = "#";
+      document.getElementById("workshopForeignerChoice").setAttribute("role", "button");
     }
   </script>
 </body>

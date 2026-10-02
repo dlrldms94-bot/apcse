@@ -105,6 +105,24 @@
   align-items: stretch;
 }
 
+.home-split-grid--triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: 20px;
+}
+
+.home-split-grid--triple .home-column-title {
+  font-size: clamp(22px, 2.4vw, 36px);
+}
+
+.home-split-grid--triple .home-choice {
+  font-size: clamp(18px, 2.2vw, 26px);
+  padding: 24px 12px;
+}
+
+.home-split-grid--triple .home-choice small {
+  font-size: clamp(12px, 1.4vw, 15px);
+}
+
 .home-split-column {
   display: grid;
   grid-template-rows: subgrid;
@@ -317,6 +335,16 @@
   display: block;
   width: 40px;
   height: 40px;
+}
+
+@media (max-width: 1280px) {
+  .home-split-grid--triple {
+    grid-template-columns: 1fr;
+  }
+
+  .home-split-grid--triple .home-split-column:not(:last-child) {
+    margin-bottom: 36px;
+  }
 }
 
 @media (max-width: 1536px) {

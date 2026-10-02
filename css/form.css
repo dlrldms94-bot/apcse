@@ -223,6 +223,47 @@
   margin-top: 4px;
 }
 
+.networking-topics-info .networking-topics-intro {
+  font-size: 13px;
+  color: #64748b;
+  margin: 8px 0 12px;
+  line-height: 1.5;
+}
+
+.networking-topics-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  font-size: 14px;
+  color: #334155;
+  line-height: 1.55;
+}
+
+.networking-moderator-topic-row span strong {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.networking-moderator-footnote {
+  margin-top: 12px;
+}
+
+.workshop-session-list {
+  gap: 14px;
+}
+
+.workshop-session-row span {
+  line-height: 1.55;
+}
+
+.radio-row.checkbox-disabled,
+.checkbox-row.checkbox-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .conditional-block {
   margin-top: 12px;
   padding: 16px;

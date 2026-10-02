@@ -24,6 +24,10 @@ const HTML_PAGES = [
   "networking-survey-foreigner.html",
   "networking-survey-complete.html",
   "admin-networking-surveys.html",
+  "workshop-survey-domestic.html",
+  "workshop-survey-foreigner.html",
+  "workshop-survey-complete.html",
+  "admin-workshop-surveys.html",
 ];
 
 const app = express();
@@ -59,10 +63,24 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-02-networking-survey-not-open";
+const BUILD_VERSION = "2026-10-02-workshop-admin";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
-const NETWORKING_SURVEY_CLOSED = true;
+const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
+const WORKSHOP_SESSION_IDS = new Set([
+  "ws-2026-10-15-1100-roborisen",
+  "ws-2026-10-15-1330-yusri",
+  "ws-2026-10-15-1600-anchal",
+  "ws-2026-10-16-1100-codable",
+  "ws-2026-10-16-1330-waris",
+]);
+const WORKSHOP_CAPACITY = { DOMESTIC: 20, FOREIGNER: 10 };
+const WORKSHOP_SURVEY_CLOSED = false;
+const WORKSHOP_SURVEY_CLOSED_MESSAGE_DOMESTIC =
+  "워크숍 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
+const WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER =
+  "Workshop session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
+const NETWORKING_SURVEY_CLOSED = false;
 const NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC =
   "글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
 const NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER =
@@ -367,6 +385,18 @@ function trimOptionalText(value) {
   return trimmed || null;
 }
 
+function normalizeNetworkingTopicIds(raw) {
+  if (!Array.isArray(raw)) return [];
+  const unique = [];
+  for (const value of raw) {
+    const id = Number(value);
+    if (!NETWORKING_TOPIC_IDS.has(id) || unique.includes(id)) continue;
+    unique.push(id);
+  }
+  unique.sort((a, b) => a - b);
+  return unique;
+}
+
 function serializeNetworkingSurvey(row) {
   return {
     id: row.id,
@@ -376,6 +406,19 @@ function serializeNetworkingSurvey(row) {
     sessionDates: row.session_dates || [],
     discussionTopic: row.discussion_topic,
     discussionTopics: row.discussion_topics || {},
+    moderatorInterest: row.moderator_interest,
+    moderatorTopicIds: normalizeNetworkingTopicIds(row.moderator_topic_ids || []),
+    createdAt: row.created_at,
+  };
+}
+
+function serializeWorkshopSurvey(row) {
+  return {
+    id: row.id,
+    type: row.type,
+    name: row.name,
+    affiliation: row.affiliation,
+    workshopSessionIds: row.workshop_session_ids || [],
     createdAt: row.created_at,
   };
 }
@@ -431,7 +474,7 @@ app.get("/api/networking-survey/capacity", async (req, res) => {
 app.post("/api/networking-survey", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
-  const { type, name, affiliation, sessionDates, discussionTopic, discussionTopics } = body;
+  const { type, name, affiliation, sessionDates, moderatorInterest, moderatorTopicIds } = body;
 
   if (NETWORKING_SURVEY_CLOSED) {
     const errorMessage =
@@ -457,34 +500,35 @@ app.post("/api/networking-survey", async (req, res) => {
 
   if (
     !Array.isArray(sessionDates) ||
-    !sessionDates.length ||
-    !sessionDates.every((date) => NETWORKING_SESSION_DATES.has(date))
+    sessionDates.length !== 1 ||
+    !NETWORKING_SESSION_DATES.has(sessionDates[0])
   ) {
     const errorMessage =
       type === "DOMESTIC"
-        ? "참석 희망 세션을 올바르게 선택해주세요."
-        : "Please select valid session(s).";
+        ? "참석 희망 날짜를 올바르게 선택해주세요."
+        : "Please select a valid session date.";
     return res.status(400).json({ error: errorMessage });
   }
 
-  const normalizedTopics = {};
-  if (discussionTopics && typeof discussionTopics === "object" && !Array.isArray(discussionTopics)) {
-    for (const date of sessionDates) {
-      if (!NETWORKING_SESSION_DATES.has(date)) continue;
-      const value = trimOptionalText(discussionTopics[date]);
-      if (value) normalizedTopics[date] = value;
-    }
+  if (typeof moderatorInterest !== "boolean") {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "모더레이터 참여 여부를 선택해주세요."
+        : "Please indicate whether you wish to participate as a moderator.";
+    return res.status(400).json({ error: errorMessage });
   }
 
-  const legacyTopic =
-    trimOptionalText(discussionTopic) ||
-    Object.entries(normalizedTopics)
-      .map(([date, text]) => {
-        const label = date.replace("2026-10-", "10/");
-        return `${label}: ${text}`;
-      })
-      .join("; ") ||
-    null;
+  const normalizedModeratorTopicIds = normalizeNetworkingTopicIds(moderatorTopicIds);
+  if (moderatorInterest && !normalizedModeratorTopicIds.length) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "모더레이터로 참여를 희망하는 주제를 1개 이상 선택해주세요."
+        : "Please select at least one topic you would like to moderate.";
+    return res.status(400).json({ error: errorMessage });
+  }
+  if (!moderatorInterest && normalizedModeratorTopicIds.length) {
+    return res.status(400).json({ error: "Invalid moderator topic selection." });
+  }
 
   const client = await pool.connect();
   try {
@@ -510,16 +554,20 @@ app.post("/api/networking-survey", async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO networking_surveys (type, name, affiliation, session_dates, discussion_topic, discussion_topics)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO networking_surveys (
+         type, name, affiliation, session_dates,
+         discussion_topic, discussion_topics,
+         moderator_interest, moderator_topic_ids
+       )
+       VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6)
        RETURNING id`,
       [
         type,
         trimmedName,
         trimmedAffiliation,
         sessionDates,
-        legacyTopic,
-        Object.keys(normalizedTopics).length ? normalizedTopics : null,
+        moderatorInterest,
+        moderatorInterest ? normalizedModeratorTopicIds : null,
       ],
     );
 
@@ -546,6 +594,180 @@ app.post("/api/networking-survey", async (req, res) => {
     }
     await serverLog({
       event: "networking_survey.failure",
+      category: "REGISTRATION",
+      status: "FAILURE",
+      registrationType: type,
+      applicantName: trimmedName,
+      ipAddress,
+      userAgent,
+      statusCode: 500,
+    });
+    return res.status(500).json({ error: "Server error" });
+  } finally {
+    client.release();
+  }
+});
+
+async function countWorkshopSlot(db, type, sessionId) {
+  const { rows } = await db.query(
+    `SELECT COUNT(*)::int AS count FROM workshop_surveys WHERE type = $1 AND $2 = ANY(workshop_session_ids)`,
+    [type, sessionId],
+  );
+  return rows[0].count;
+}
+
+function workshopCapacityLimit(type) {
+  return WORKSHOP_CAPACITY[type] ?? WORKSHOP_CAPACITY.DOMESTIC;
+}
+
+async function getWorkshopCapacityMap() {
+  const slots = { DOMESTIC: {}, FOREIGNER: {} };
+  for (const type of ["DOMESTIC", "FOREIGNER"]) {
+    const limit = workshopCapacityLimit(type);
+    for (const sessionId of WORKSHOP_SESSION_IDS) {
+      const count = await countWorkshopSlot(pool, type, sessionId);
+      slots[type][sessionId] = {
+        count,
+        limit,
+        full: count >= limit,
+      };
+    }
+  }
+  return slots;
+}
+
+function workshopSessionShortLabel(sessionId, type) {
+  const labels = {
+    "ws-2026-10-15-1100-roborisen": type === "DOMESTIC" ? "10/15 11:00" : "Oct 15 11:00",
+    "ws-2026-10-15-1330-yusri": type === "DOMESTIC" ? "10/15 13:30" : "Oct 15 13:30",
+    "ws-2026-10-15-1600-anchal": type === "DOMESTIC" ? "10/15 16:00" : "Oct 15 16:00",
+    "ws-2026-10-16-1100-codable": type === "DOMESTIC" ? "10/16 11:00" : "Oct 16 11:00",
+    "ws-2026-10-16-1330-waris": type === "DOMESTIC" ? "10/16 13:30" : "Oct 16 13:30",
+  };
+  return labels[sessionId] || sessionId;
+}
+
+function formatWorkshopFullMessage(type, fullSessionIds) {
+  const limit = workshopCapacityLimit(type);
+  const labels = fullSessionIds.map((id) => workshopSessionShortLabel(id, type));
+  if (type === "DOMESTIC") {
+    return `${labels.join(", ")} 워크숍은 정원(${limit}명)이 마감되어 제출할 수 없습니다.`;
+  }
+  return `${labels.join(", ")} workshop(s) are full (${limit} participants). Submission is not available.`;
+}
+
+function normalizeWorkshopSessionIds(raw) {
+  if (!Array.isArray(raw) || !raw.length) return [];
+  const unique = [];
+  for (const value of raw) {
+    const id = String(value ?? "").trim();
+    if (!WORKSHOP_SESSION_IDS.has(id) || unique.includes(id)) continue;
+    unique.push(id);
+  }
+  return unique;
+}
+
+app.get("/api/workshop-survey/capacity", async (req, res) => {
+  try {
+    const slots = await getWorkshopCapacityMap();
+    return res.json({
+      capacity: { DOMESTIC: WORKSHOP_CAPACITY.DOMESTIC, FOREIGNER: WORKSHOP_CAPACITY.FOREIGNER },
+      slots,
+    });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.post("/api/workshop-survey", async (req, res) => {
+  const { ipAddress, userAgent } = getRequestMeta(req);
+  const body = req.body || {};
+  const { type, name, affiliation, workshopSessionIds } = body;
+
+  if (WORKSHOP_SURVEY_CLOSED) {
+    const errorMessage =
+      type === "FOREIGNER"
+        ? WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER
+        : WORKSHOP_SURVEY_CLOSED_MESSAGE_DOMESTIC;
+    return res.status(403).json({ error: errorMessage });
+  }
+
+  if (type !== "DOMESTIC" && type !== "FOREIGNER") {
+    return res.status(400).json({ error: "Invalid survey type." });
+  }
+
+  const trimmedName = String(name ?? "").trim();
+  const trimmedAffiliation = String(affiliation ?? "").trim();
+  if (!trimmedName || !trimmedAffiliation) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "이름과 소속을 입력해주세요."
+        : "Please enter your name and affiliation.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const normalizedSessionIds = normalizeWorkshopSessionIds(workshopSessionIds);
+  if (!normalizedSessionIds.length) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "참석 희망 워크숍을 1개 이상 선택해주세요."
+        : "Please select at least one workshop session.";
+    return res.status(400).json({ error: errorMessage });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const fullSessions = [];
+    for (const sessionId of normalizedSessionIds) {
+      await client.query(`SELECT pg_advisory_xact_lock(hashtext($1::text))`, [
+        `workshop:${type}:${sessionId}`,
+      ]);
+      const count = await countWorkshopSlot(client, type, sessionId);
+      if (count >= workshopCapacityLimit(type)) {
+        fullSessions.push(sessionId);
+      }
+    }
+
+    if (fullSessions.length) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({
+        error: formatWorkshopFullMessage(type, fullSessions),
+        fullSessions,
+      });
+    }
+
+    const result = await client.query(
+      `INSERT INTO workshop_surveys (type, name, affiliation, workshop_session_ids)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id`,
+      [type, trimmedName, trimmedAffiliation, normalizedSessionIds],
+    );
+
+    await client.query("COMMIT");
+
+    await serverLog({
+      event: "workshop_survey.success",
+      category: "REGISTRATION",
+      status: "SUCCESS",
+      registrationType: type,
+      registrationId: result.rows[0].id,
+      applicantName: trimmedName,
+      ipAddress,
+      userAgent,
+      statusCode: 200,
+    });
+
+    return res.json({ id: result.rows[0].id, message: "Submitted." });
+  } catch {
+    try {
+      await client.query("ROLLBACK");
+    } catch {
+      // ignore rollback failure
+    }
+    await serverLog({
+      event: "workshop_survey.failure",
       category: "REGISTRATION",
       status: "FAILURE",
       registrationType: type,
@@ -1691,6 +1913,26 @@ app.get("/api/admin/networking-surveys", async (req, res) => {
       surveys: surveysResult.rows.map(serializeNetworkingSurvey),
       slots,
       capacity: NETWORKING_SESSION_CAPACITY,
+    });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/api/admin/workshop-surveys", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  try {
+    const [surveysResult, slots] = await Promise.all([
+      pool.query("SELECT * FROM workshop_surveys ORDER BY created_at DESC"),
+      getWorkshopCapacityMap(),
+    ]);
+    return res.json({
+      surveys: surveysResult.rows.map(serializeWorkshopSurvey),
+      slots,
+      capacity: WORKSHOP_CAPACITY,
     });
   } catch {
     return res.status(500).json({ error: "Server error" });

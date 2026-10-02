@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workshop Session Survey | APCSE</title>
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/home.css">
+  <link rel="stylesheet" href="css/form.css">
+  <script src="js/workshop-survey-schedule.js"></script>
+  <script>
+    if (!WorkshopSurveySchedule.isForeignerWorkshopSurveyOpen()) {
+      location.replace("index.html?workshop-foreigner=closed");
+    }
+  </script>
+</head>
+<body>
+  <header class="home-header">
+    <a href="index.html" class="home-logo">APCSE Pre-Registration</a>
+    <a href="mypage.html" class="home-mypage-btn">My Page</a>
+  </header>
+
+  <main class="page">
+    <h1 class="page-title">Workshop Session Pre-Registration Survey</h1>
+
+    <div class="card">
+      <form id="workshopSurveyForm" class="form-grid">
+        <div class="field">
+          <label>Name <span class="req">*</span></label>
+          <input type="text" name="name" required autocomplete="name">
+        </div>
+
+        <div class="field">
+          <label>Affiliation <span class="req">*</span></label>
+          <input type="text" name="affiliation" required autocomplete="organization">
+        </div>
+
+        <div class="field">
+          <label>1. Please select the workshop session(s) you would like to attend. <span class="req">*</span></label>
+          <div class="checkbox-group workshop-session-list" data-workshop-sessions></div>
+          <p class="hint">Multiple selections are allowed. Each workshop accepts 10 international participants (first come, first served).</p>
+        </div>
+
+        <div id="errorBox" class="alert error" hidden></div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="submitBtn" disabled>Submit</button>
+          <a href="index.html" class="btn btn-secondary">Back</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script src="js/workshop-sessions.js"></script>
+  <script src="js/workshop-survey-form.js"></script>
+  <script>
+    initWorkshopSurveyForm(document.getElementById("workshopSurveyForm"), {
+      type: "FOREIGNER",
+      lang: "en",
+      completeUrl: "workshop-survey-complete.html?lang=en",
+      messages: {
+        basicsRequired: "Please enter your name and affiliation and select at least one workshop.",
+        submitting: "Submitting...",
+        submitLabel: "Submit",
+        failure: "Submission failed. Please try again later.",
+        allSlotsFull: "All workshops are full (10 participants). Submission is not available.",
+        slotFullHint: "Full (10 participants)",
+      },
+    });
+  </script>
+</body>
+</html>
