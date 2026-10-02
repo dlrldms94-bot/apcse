@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-02-home-copy";
+const BUILD_VERSION = "2026-10-03-surveys-not-open";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -75,12 +75,12 @@ const WORKSHOP_SESSION_IDS = new Set([
   "ws-2026-10-16-1330-waris",
 ]);
 const WORKSHOP_CAPACITY = { DOMESTIC: 20, FOREIGNER: 10 };
-const WORKSHOP_SURVEY_CLOSED = false;
+const WORKSHOP_SURVEY_CLOSED = true;
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_DOMESTIC =
   "워크숍 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER =
   "Workshop session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
-const NETWORKING_SURVEY_CLOSED = false;
+const NETWORKING_SURVEY_CLOSED = true;
 const NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC =
   "글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
 const NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER =

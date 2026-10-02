@@ -1,5 +1,5 @@
 (function (global) {
-  const WORKSHOP_SURVEY_CLOSED = false;
+  const WORKSHOP_SURVEY_CLOSED = true;
 
   function isDomesticWorkshopSurveyOpen() {
     return !WORKSHOP_SURVEY_CLOSED;

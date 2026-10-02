@@ -1,5 +1,5 @@
 (function (global) {
-  const NETWORKING_SURVEY_CLOSED = false;
+  const NETWORKING_SURVEY_CLOSED = true;
 
   function isDomesticNetworkingSurveyOpen() {
     return !NETWORKING_SURVEY_CLOSED;

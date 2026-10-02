@@ -10,6 +10,7 @@ body {
   background: #f8fafc;
   color: #0f172a;
   line-height: 1.5;
+  word-break: keep-all;
 }
 
 .site-header {
