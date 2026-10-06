@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-06-survey-form-v3";
+const BUILD_VERSION = "2026-10-06-survey-open-1500";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -76,16 +76,23 @@ const WORKSHOP_SESSION_IDS = new Set([
 ]);
 const WORKSHOP_CAPACITY = { DOMESTIC: 20, FOREIGNER: 10 };
 const WORKSHOP_MAX_SELECTIONS = 2;
-const WORKSHOP_SURVEY_CLOSED = false;
+const SURVEY_OPEN_AT = Date.parse("2026-10-06T15:00:00+09:00");
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_DOMESTIC =
-  "워크숍 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
+  "워크숍 세션 사전 참여 신청은 아직 오픈 전입니다. 10월 6일(화) 15:00부터 접수가 시작됩니다.";
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER =
-  "Workshop session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
-const NETWORKING_SURVEY_CLOSED = false;
+  "Workshop session pre-participation application is not yet open. Applications open on October 6 at 15:00 (KST).";
 const NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC =
-  "글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
+  "글로벌 네트워킹 세션 사전 참여 신청은 아직 오픈 전입니다. 10월 6일(화) 15:00부터 접수가 시작됩니다.";
 const NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER =
-  "Global Networking Session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
+  "Global Networking Session pre-participation application is not yet open. Applications open on October 6 at 15:00 (KST).";
+
+function isNetworkingSurveyOpen(now = Date.now()) {
+  return now >= SURVEY_OPEN_AT;
+}
+
+function isWorkshopSurveyOpen(now = Date.now()) {
+  return now >= SURVEY_OPEN_AT;
+}
 const REGISTRATION_CLOSED = true;
 const REGISTRATION_CLOSED_MESSAGE_DOMESTIC =
   "국내 참가자 사전등록이 마감되었습니다. 정원 마감으로 인해 사전등록이 종료되었습니다.";
@@ -507,7 +514,7 @@ app.post("/api/networking-survey", async (req, res) => {
   const { type, name, affiliation, phone, email, sessionDates, moderatorInterest, moderatorTopicIds } =
     body;
 
-  if (NETWORKING_SURVEY_CLOSED) {
+  if (!isNetworkingSurveyOpen()) {
     const errorMessage =
       type === "FOREIGNER"
         ? NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER
@@ -722,7 +729,7 @@ app.post("/api/workshop-survey", async (req, res) => {
   const body = req.body || {};
   const { type, name, affiliation, phone, email, workshopSessionIds } = body;
 
-  if (WORKSHOP_SURVEY_CLOSED) {
+  if (!isWorkshopSurveyOpen()) {
     const errorMessage =
       type === "FOREIGNER"
         ? WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER
