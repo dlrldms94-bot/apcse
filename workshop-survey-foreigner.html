@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Workshop Session Survey | APCSE</title>
+  <title>Workshop Session Pre-Participation Application | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
@@ -22,10 +22,14 @@
   </header>
 
   <main class="page">
-    <h1 class="page-title">Workshop Session Pre-Registration Survey</h1>
+    <h1 class="page-title">Workshop Session Pre-Participation Application</h1>
 
     <div class="card">
       <form id="workshopSurveyForm" class="form-grid">
+        <div class="survey-intro-notice">
+          <p>For pre-registered participants only.<br>Responses from non-registered participants will be excluded.</p>
+        </div>
+
         <div class="field">
           <label>Name <span class="req">*</span></label>
           <input type="text" name="name" required autocomplete="name">
@@ -37,9 +41,21 @@
         </div>
 
         <div class="field">
-          <label>1. Please select the workshop session(s) you would like to attend. <span class="req">*</span></label>
+          <label>Mobile phone <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="010-0000-0000" pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}" required autocomplete="tel">
+        </div>
+
+        <div class="field">
+          <label>Email <span class="req">*</span></label>
+          <input type="email" name="email" required autocomplete="email">
+        </div>
+
+        <div class="field">
+          <label>1. Please select the workshop session(s) you would like to join for hands-on participation. <span class="req">*</span></label>
+          <p class="hint">(Venue: Conference Room A Sun+Cloud)</p>
           <div class="checkbox-group workshop-session-list" data-workshop-sessions></div>
-          <p class="hint">Multiple selections are allowed. Each workshop accepts 10 international participants (first come, first served).</p>
+          <p class="hint">Up to 2 workshops / 10 international participants per workshop, first come, first served.</p>
+          <p class="hint">If hands-on registration is full, you may still attend the workshop as an observer.</p>
         </div>
 
         <div id="errorBox" class="alert error" hidden></div>
@@ -58,13 +74,15 @@
     initWorkshopSurveyForm(document.getElementById("workshopSurveyForm"), {
       type: "FOREIGNER",
       lang: "en",
+      maxSelections: 2,
       completeUrl: "workshop-survey-complete.html?lang=en",
       messages: {
-        basicsRequired: "Please enter your name and affiliation and select at least one workshop.",
+        basicsRequired: "Please enter your name, affiliation, mobile phone, email, and select workshop(s).",
+        maxSelections: "You may select up to 2 workshops.",
         submitting: "Submitting...",
         submitLabel: "Submit",
         failure: "Submission failed. Please try again later.",
-        allSlotsFull: "All workshops are full (10 participants). Submission is not available.",
+        allSlotsFull: "Hands-on registration is full for all selectable workshops. (You may still attend as an observer.)",
         slotFullHint: "Full (10 participants)",
       },
     });

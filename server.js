@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-03-surveys-not-open";
+const BUILD_VERSION = "2026-10-06-survey-form-v3";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -75,12 +75,13 @@ const WORKSHOP_SESSION_IDS = new Set([
   "ws-2026-10-16-1330-waris",
 ]);
 const WORKSHOP_CAPACITY = { DOMESTIC: 20, FOREIGNER: 10 };
-const WORKSHOP_SURVEY_CLOSED = true;
+const WORKSHOP_MAX_SELECTIONS = 2;
+const WORKSHOP_SURVEY_CLOSED = false;
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_DOMESTIC =
   "워크숍 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
 const WORKSHOP_SURVEY_CLOSED_MESSAGE_FOREIGNER =
   "Workshop session pre-registration survey is not yet open. The survey opening schedule will be announced soon.";
-const NETWORKING_SURVEY_CLOSED = true;
+const NETWORKING_SURVEY_CLOSED = false;
 const NETWORKING_SURVEY_CLOSED_MESSAGE_DOMESTIC =
   "글로벌 네트워킹 세션 사전 수요조사는 아직 오픈 전입니다. 접수 시작 일정은 추후 공지드릴 예정입니다.";
 const NETWORKING_SURVEY_CLOSED_MESSAGE_FOREIGNER =
@@ -385,6 +386,31 @@ function trimOptionalText(value) {
   return trimmed || null;
 }
 
+function validateSurveyContactFields(type, phone, email) {
+  const trimmedPhone = String(phone ?? "").trim();
+  const trimmedEmail = String(email ?? "").trim();
+  if (!trimmedPhone || !trimmedEmail) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "휴대전화와 이메일을 입력해주세요."
+        : "Please enter your mobile phone number and email.";
+    return { ok: false, error: errorMessage };
+  }
+  if (!/^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(trimmedPhone)) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? "휴대전화 번호 형식을 확인해주세요. (예: 010-0000-0000)"
+        : "Please check your mobile phone number format. (e.g. 010-0000-0000)";
+    return { ok: false, error: errorMessage };
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    const errorMessage =
+      type === "DOMESTIC" ? "이메일 형식을 확인해주세요." : "Please enter a valid email address.";
+    return { ok: false, error: errorMessage };
+  }
+  return { ok: true, phone: trimmedPhone, email: trimmedEmail.toLowerCase() };
+}
+
 function normalizeNetworkingTopicIds(raw) {
   if (!Array.isArray(raw)) return [];
   const unique = [];
@@ -404,6 +430,8 @@ function serializeNetworkingSurvey(row) {
     name: row.name,
     affiliation: row.affiliation,
     sessionDates: row.session_dates || [],
+    phone: row.phone,
+    email: row.email,
     discussionTopic: row.discussion_topic,
     discussionTopics: row.discussion_topics || {},
     moderatorInterest: row.moderator_interest,
@@ -418,6 +446,8 @@ function serializeWorkshopSurvey(row) {
     type: row.type,
     name: row.name,
     affiliation: row.affiliation,
+    phone: row.phone,
+    email: row.email,
     workshopSessionIds: row.workshop_session_ids || [],
     createdAt: row.created_at,
   };
@@ -474,7 +504,8 @@ app.get("/api/networking-survey/capacity", async (req, res) => {
 app.post("/api/networking-survey", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
-  const { type, name, affiliation, sessionDates, moderatorInterest, moderatorTopicIds } = body;
+  const { type, name, affiliation, phone, email, sessionDates, moderatorInterest, moderatorTopicIds } =
+    body;
 
   if (NETWORKING_SURVEY_CLOSED) {
     const errorMessage =
@@ -496,6 +527,11 @@ app.post("/api/networking-survey", async (req, res) => {
         ? "이름과 소속을 입력해주세요."
         : "Please enter your name and affiliation.";
     return res.status(400).json({ error: errorMessage });
+  }
+
+  const contactCheck = validateSurveyContactFields(type, phone, email);
+  if (!contactCheck.ok) {
+    return res.status(400).json({ error: contactCheck.error });
   }
 
   if (
@@ -555,16 +591,18 @@ app.post("/api/networking-survey", async (req, res) => {
 
     const result = await client.query(
       `INSERT INTO networking_surveys (
-         type, name, affiliation, session_dates,
+         type, name, affiliation, phone, email, session_dates,
          discussion_topic, discussion_topics,
          moderator_interest, moderator_topic_ids
        )
-       VALUES ($1, $2, $3, $4, NULL, NULL, $5, $6)
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, $8)
        RETURNING id`,
       [
         type,
         trimmedName,
         trimmedAffiliation,
+        contactCheck.phone,
+        contactCheck.email,
         sessionDates,
         moderatorInterest,
         moderatorInterest ? normalizedModeratorTopicIds : null,
@@ -682,7 +720,7 @@ app.get("/api/workshop-survey/capacity", async (req, res) => {
 app.post("/api/workshop-survey", async (req, res) => {
   const { ipAddress, userAgent } = getRequestMeta(req);
   const body = req.body || {};
-  const { type, name, affiliation, workshopSessionIds } = body;
+  const { type, name, affiliation, phone, email, workshopSessionIds } = body;
 
   if (WORKSHOP_SURVEY_CLOSED) {
     const errorMessage =
@@ -706,12 +744,24 @@ app.post("/api/workshop-survey", async (req, res) => {
     return res.status(400).json({ error: errorMessage });
   }
 
+  const contactCheck = validateSurveyContactFields(type, phone, email);
+  if (!contactCheck.ok) {
+    return res.status(400).json({ error: contactCheck.error });
+  }
+
   const normalizedSessionIds = normalizeWorkshopSessionIds(workshopSessionIds);
   if (!normalizedSessionIds.length) {
     const errorMessage =
       type === "DOMESTIC"
-        ? "참석 희망 워크숍을 1개 이상 선택해주세요."
+        ? "실습 참여를 희망하는 워크숍을 1개 이상 선택해주세요."
         : "Please select at least one workshop session.";
+    return res.status(400).json({ error: errorMessage });
+  }
+  if (normalizedSessionIds.length > WORKSHOP_MAX_SELECTIONS) {
+    const errorMessage =
+      type === "DOMESTIC"
+        ? `워크숍은 최대 ${WORKSHOP_MAX_SELECTIONS}개까지 선택할 수 있습니다.`
+        : `You may select up to ${WORKSHOP_MAX_SELECTIONS} workshops.`;
     return res.status(400).json({ error: errorMessage });
   }
 
@@ -739,10 +789,10 @@ app.post("/api/workshop-survey", async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO workshop_surveys (type, name, affiliation, workshop_session_ids)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO workshop_surveys (type, name, affiliation, phone, email, workshop_session_ids)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [type, trimmedName, trimmedAffiliation, normalizedSessionIds],
+      [type, trimmedName, trimmedAffiliation, contactCheck.phone, contactCheck.email, normalizedSessionIds],
     );
 
     await client.query("COMMIT");

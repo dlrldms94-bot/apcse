@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>글로벌 네트워킹 세션 사전 수요조사 | APCSE</title>
+  <title>글로벌 네트워킹 세션 사전 참여 신청 | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
@@ -22,24 +22,37 @@
   </header>
 
   <main class="page">
-    <h1 class="page-title">글로벌 네트워킹 세션 사전 수요조사</h1>
+    <h1 class="page-title">글로벌 네트워킹 세션 사전 참여 신청</h1>
 
     <div class="card">
       <form id="networkingSurveyForm" class="form-grid">
+        <div class="survey-intro-notice">
+          <p>본 수요조사는 사전등록자를 대상으로 합니다.<br>사전등록하지 않은 분의 응답은 최종 집계에서 제외됩니다.</p>
+        </div>
+
         <div class="field">
           <label>1. 이름 <span class="req">*</span></label>
           <input type="text" name="name" required autocomplete="name">
-          <p class="hint">이름을 입력해 주세요.</p>
         </div>
 
         <div class="field">
           <label>2. 소속 <span class="req">*</span></label>
           <input type="text" name="affiliation" required autocomplete="organization">
-          <p class="hint">소속 기관 또는 단체명을 입력해 주세요.</p>
         </div>
 
         <div class="field">
-          <label>3. 참석을 희망하는 날짜를 선택해 주세요. <span class="req">*</span></label>
+          <label>3. 휴대전화 <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="010-0000-0000" pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}" required autocomplete="tel">
+        </div>
+
+        <div class="field">
+          <label>4. 이메일 <span class="req">*</span></label>
+          <input type="email" name="email" required autocomplete="email">
+        </div>
+
+        <div class="field">
+          <label>5. 참석을 희망하는 날짜를 선택해 주세요. <span class="req">*</span></label>
+          <p class="hint">(운영 장소: Conference Room B 시간: 14:30~16:00)</p>
           <div class="radio-group">
             <label class="radio-row">
               <input type="radio" name="sessionDate" value="2026-10-15" required>
@@ -54,7 +67,7 @@
         </div>
 
         <div class="field networking-topics-info">
-          <label>4. 확정 논의 주제 안내</label>
+          <label>6. 확정 논의 주제 안내</label>
           <p class="networking-topics-intro">(10월 15일(목)과 10월 16일(금), 양일 모두 동일한 6개 주제로 운영됩니다.)</p>
           <ul class="networking-topics-list">
             <li>① 생성형 AI, 학교 내 전면 허용해야할까?</li>
@@ -68,7 +81,7 @@
 
         <div class="conditional-block" data-followup-block hidden>
           <div class="field">
-            <label>5. 네트워킹 세션 모더레이터로 참여하시겠습니까? <span class="req">*</span></label>
+            <label>7. 네트워킹 세션 모더레이터로 참여하시겠습니까? <span class="req">*</span></label>
             <p class="hint">(모더레이터 지원 현황은 주최 측에서 검토 후 최종 확정하여 개별 안내드릴 예정입니다.)</p>
             <div class="radio-group">
               <label class="radio-row">
@@ -110,7 +123,7 @@
       lang: "ko",
       completeUrl: "networking-survey-complete.html?lang=ko",
       messages: {
-        basicsRequired: "이름, 소속, 참석 희망 날짜, 모더레이터 참여 여부를 모두 입력·선택해 주세요.",
+        basicsRequired: "이름, 소속, 휴대전화, 이메일, 참석 희망 날짜, 모더레이터 참여 여부를 모두 입력·선택해 주세요.",
         moderatorTopicsRequired: "모더레이터로 참여를 희망하는 주제를 1개 이상 선택해 주세요.",
         submitting: "제출 중...",
         submitLabel: "제출하기",

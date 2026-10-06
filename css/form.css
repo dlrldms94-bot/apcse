@@ -258,6 +258,25 @@
   line-height: 1.55;
 }
 
+.survey-intro-notice {
+  padding: 16px 18px;
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  line-height: 1.65;
+}
+
+.survey-intro-notice p + p {
+  margin-top: 8px;
+}
+
+.survey-intro-notice .survey-intro-en {
+  margin-top: 12px;
+  color: #475569;
+}
+
 .radio-row.checkbox-disabled,
 .checkbox-row.checkbox-disabled {
   opacity: 0.55;

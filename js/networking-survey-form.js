@@ -121,9 +121,11 @@ function initNetworkingSurveyForm(form, options) {
   function isFormComplete() {
     const name = form.querySelector('[name="name"]')?.value.trim();
     const affiliation = form.querySelector('[name="affiliation"]')?.value.trim();
+    const phone = form.querySelector('[name="phone"]')?.value.trim();
+    const email = form.querySelector('[name="email"]')?.value.trim();
     const sessionDate = getSessionDate();
     const moderatorInterest = getModeratorInterest();
-    if (!name || !affiliation || !sessionDate || moderatorInterest === null) {
+    if (!name || !affiliation || !phone || !email || !sessionDate || moderatorInterest === null) {
       return false;
     }
     if (moderatorInterest && !getModeratorTopicIds().length) {
@@ -144,7 +146,7 @@ function initNetworkingSurveyForm(form, options) {
     updateSubmitState();
   }
 
-  form.querySelectorAll('[name="name"], [name="affiliation"]').forEach((input) => {
+  form.querySelectorAll('[name="name"], [name="affiliation"], [name="phone"], [name="email"]').forEach((input) => {
     input.addEventListener("input", handleFormChange);
   });
   sessionDateInputs.forEach((input) => {
@@ -172,7 +174,14 @@ function initNetworkingSurveyForm(form, options) {
     const moderatorInterest = getModeratorInterest();
     const moderatorTopicIds = getModeratorTopicIds();
 
-    if (!form.querySelector('[name="name"]')?.value.trim() || !form.querySelector('[name="affiliation"]')?.value.trim() || !sessionDates.length || moderatorInterest === null) {
+    if (
+      !form.querySelector('[name="name"]')?.value.trim() ||
+      !form.querySelector('[name="affiliation"]')?.value.trim() ||
+      !form.querySelector('[name="phone"]')?.value.trim() ||
+      !form.querySelector('[name="email"]')?.value.trim() ||
+      !sessionDates.length ||
+      moderatorInterest === null
+    ) {
       if (errorBox) {
         errorBox.textContent = options.messages.basicsRequired;
         errorBox.hidden = false;
@@ -201,6 +210,8 @@ function initNetworkingSurveyForm(form, options) {
           type: options.type,
           name: form.querySelector('[name="name"]').value.trim(),
           affiliation: form.querySelector('[name="affiliation"]').value.trim(),
+          phone: form.querySelector('[name="phone"]').value.trim(),
+          email: form.querySelector('[name="email"]').value.trim(),
           sessionDates,
           moderatorInterest,
           moderatorTopicIds: moderatorInterest ? moderatorTopicIds : [],

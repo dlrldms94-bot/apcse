@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Global Networking Session Survey | APCSE</title>
+  <title>Global Networking Session Pre-Participation Application | APCSE</title>
   <link rel="stylesheet" href="css/reset.css">
   <link rel="stylesheet" href="css/common.css">
   <link rel="stylesheet" href="css/home.css">
@@ -22,24 +22,37 @@
   </header>
 
   <main class="page">
-    <h1 class="page-title">Global Networking Session Pre-Registration Survey</h1>
+    <h1 class="page-title">Global Networking Session Pre-Participation Application</h1>
 
     <div class="card">
       <form id="networkingSurveyForm" class="form-grid">
+        <div class="survey-intro-notice">
+          <p>For pre-registered participants only.<br>Responses from non-registered participants will be excluded.</p>
+        </div>
+
         <div class="field">
           <label>1. Name <span class="req">*</span></label>
           <input type="text" name="name" required autocomplete="name">
-          <p class="hint">Please enter your name.</p>
         </div>
 
         <div class="field">
           <label>2. Affiliation <span class="req">*</span></label>
           <input type="text" name="affiliation" required autocomplete="organization">
-          <p class="hint">Please enter your affiliation or organization.</p>
         </div>
 
         <div class="field">
-          <label>3. Please select the date you would like to attend. <span class="req">*</span></label>
+          <label>3. Mobile phone <span class="req">*</span></label>
+          <input type="tel" name="phone" placeholder="010-0000-0000" pattern="[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}" required autocomplete="tel">
+        </div>
+
+        <div class="field">
+          <label>4. Email <span class="req">*</span></label>
+          <input type="email" name="email" required autocomplete="email">
+        </div>
+
+        <div class="field">
+          <label>5. Please select the date you would like to attend. <span class="req">*</span></label>
+          <p class="hint">(Venue: Conference Room B / Time: 14:30–16:00)</p>
           <div class="radio-group">
             <label class="radio-row">
               <input type="radio" name="sessionDate" value="2026-10-15" required>
@@ -54,7 +67,7 @@
         </div>
 
         <div class="field networking-topics-info">
-          <label>4. Confirmed discussion topics</label>
+          <label>6. Confirmed discussion topics</label>
           <p class="networking-topics-intro">(The same six topics will be discussed on both October 15 (Thu) and October 16 (Fri).)</p>
           <ul class="networking-topics-list">
             <li>① Should generative AI be fully permitted in schools?</li>
@@ -68,7 +81,7 @@
 
         <div class="conditional-block" data-followup-block hidden>
           <div class="field">
-            <label>5. Would you like to participate as a moderator for the Global Networking Session? <span class="req">*</span></label>
+            <label>7. Would you like to participate as a moderator for the Global Networking Session? <span class="req">*</span></label>
             <p class="hint">(Moderator applications will be reviewed by the organizers, and selected moderators will be notified individually.)</p>
             <div class="radio-group">
               <label class="radio-row">
@@ -110,7 +123,7 @@
       lang: "en",
       completeUrl: "networking-survey-complete.html?lang=en",
       messages: {
-        basicsRequired: "Please enter your name and affiliation, select a session date, and indicate whether you wish to serve as a moderator.",
+        basicsRequired: "Please enter your name, affiliation, mobile phone, email, session date, and moderator preference.",
         moderatorTopicsRequired: "Please select at least one topic you would like to moderate.",
         submitting: "Submitting...",
         submitLabel: "Submit",

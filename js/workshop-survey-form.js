@@ -65,6 +65,7 @@ function initWorkshopSurveyForm(form, options) {
   const sessionsContainer = form.querySelector("[data-workshop-sessions]");
   const submitBtn = form.querySelector("[type='submit']");
   const errorBox = form.querySelector("#errorBox");
+  const maxSelections = options.maxSelections ?? 2;
 
   renderWorkshopSessionCheckboxes(
     sessionsContainer,
@@ -76,10 +77,27 @@ function initWorkshopSurveyForm(form, options) {
     return [...form.querySelectorAll('input[name="workshopSessionIds"]:checked')].map((el) => el.value);
   }
 
+  function enforceMaxSelections(changedInput) {
+    const selected = getSelectedSessionIds();
+    if (selected.length <= maxSelections) {
+      if (errorBox) errorBox.hidden = true;
+      return true;
+    }
+    if (changedInput) changedInput.checked = false;
+    if (errorBox) {
+      errorBox.textContent = options.messages.maxSelections;
+      errorBox.hidden = false;
+    }
+    return false;
+  }
+
   function isFormComplete() {
     const name = form.querySelector('[name="name"]')?.value.trim();
     const affiliation = form.querySelector('[name="affiliation"]')?.value.trim();
-    return Boolean(name && affiliation && getSelectedSessionIds().length);
+    const phone = form.querySelector('[name="phone"]')?.value.trim();
+    const email = form.querySelector('[name="email"]')?.value.trim();
+    const count = getSelectedSessionIds().length;
+    return Boolean(name && affiliation && phone && email && count > 0 && count <= maxSelections);
   }
 
   function updateSubmitState() {
@@ -88,11 +106,12 @@ function initWorkshopSurveyForm(form, options) {
     }
   }
 
-  form.querySelectorAll('[name="name"], [name="affiliation"]').forEach((input) => {
+  form.querySelectorAll('[name="name"], [name="affiliation"], [name="phone"], [name="email"]').forEach((input) => {
     input.addEventListener("input", updateSubmitState);
   });
   form.addEventListener("change", (event) => {
     if (event.target.matches('input[name="workshopSessionIds"]')) {
+      enforceMaxSelections(event.target);
       updateSubmitState();
     }
   });
@@ -114,6 +133,14 @@ function initWorkshopSurveyForm(form, options) {
       return;
     }
 
+    if (workshopSessionIds.length > maxSelections) {
+      if (errorBox) {
+        errorBox.textContent = options.messages.maxSelections;
+        errorBox.hidden = false;
+      }
+      return;
+    }
+
     if (submitBtn) {
       submitBtn.disabled = true;
       submitBtn.textContent = options.messages.submitting;
@@ -127,6 +154,8 @@ function initWorkshopSurveyForm(form, options) {
           type: options.type,
           name: form.querySelector('[name="name"]').value.trim(),
           affiliation: form.querySelector('[name="affiliation"]').value.trim(),
+          phone: form.querySelector('[name="phone"]').value.trim(),
+          email: form.querySelector('[name="email"]').value.trim(),
           workshopSessionIds,
         }),
       });
