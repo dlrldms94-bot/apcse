@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-06-survey-open-1500";
+const BUILD_VERSION = "2026-10-07-foreigner-phone";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -403,12 +403,14 @@ function validateSurveyContactFields(type, phone, email) {
         : "Please enter your mobile phone number and email.";
     return { ok: false, error: errorMessage };
   }
-  if (!/^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(trimmedPhone)) {
-    const errorMessage =
-      type === "DOMESTIC"
-        ? "휴대전화 번호 형식을 확인해주세요. (예: 010-0000-0000)"
-        : "Please check your mobile phone number format. (e.g. 010-0000-0000)";
-    return { ok: false, error: errorMessage };
+  if (
+    type === "DOMESTIC" &&
+    !/^[0-9]{2,3}-[0-9]{3,4}-[0-9]{4}$/.test(trimmedPhone)
+  ) {
+    return {
+      ok: false,
+      error: "휴대전화 번호 형식을 확인해주세요. (예: 010-0000-0000)",
+    };
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
     const errorMessage =
