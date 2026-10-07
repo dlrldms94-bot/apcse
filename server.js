@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-07-foreigner-phone";
+const BUILD_VERSION = "2026-10-07-networking-moderator-jsonb";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -604,7 +604,7 @@ app.post("/api/networking-survey", async (req, res) => {
          discussion_topic, discussion_topics,
          moderator_interest, moderator_topic_ids
        )
-       VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, $8)
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, $8::jsonb)
        RETURNING id`,
       [
         type,
@@ -614,7 +614,7 @@ app.post("/api/networking-survey", async (req, res) => {
         contactCheck.email,
         sessionDates,
         moderatorInterest,
-        moderatorInterest ? normalizedModeratorTopicIds : null,
+        moderatorInterest ? JSON.stringify(normalizedModeratorTopicIds) : null,
       ],
     );
 
@@ -633,7 +633,16 @@ app.post("/api/networking-survey", async (req, res) => {
     });
 
     return res.json({ id: result.rows[0].id, message: "Submitted." });
-  } catch {
+  } catch (error) {
+    process.stderr.write(
+      `${JSON.stringify({
+        timestamp: new Date().toISOString(),
+        service: "apcse",
+        level: "error",
+        event: "networking_survey.insert_failure",
+        message: error?.message || String(error),
+      })}\n`,
+    );
     try {
       await client.query("ROLLBACK");
     } catch {
