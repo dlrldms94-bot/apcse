@@ -63,7 +63,7 @@ const EXTENSION_MIME_MAP = {
   ".doc": "application/msword",
   ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 };
-const BUILD_VERSION = "2026-10-07-networking-moderator-jsonb";
+const BUILD_VERSION = "2026-10-09-admin-networking-survey-delete";
 const NETWORKING_SESSION_DATES = new Set(["2026-10-15", "2026-10-16"]);
 const NETWORKING_SESSION_CAPACITY = 20;
 const NETWORKING_TOPIC_IDS = new Set([1, 2, 3, 4, 5, 6]);
@@ -2002,6 +2002,44 @@ app.get("/api/admin/workshop-surveys", async (req, res) => {
       slots,
       capacity: WORKSHOP_CAPACITY,
     });
+  } catch {
+    return res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.delete("/api/admin/networking-surveys/:id", async (req, res) => {
+  if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  const { ipAddress, userAgent } = getRequestMeta(req);
+
+  try {
+    const existing = await pool.query(
+      "SELECT id, type, name, email, phone FROM networking_surveys WHERE id = $1",
+      [req.params.id],
+    );
+    if (!existing.rows[0]) {
+      return res.status(404).json({ error: "Networking survey not found." });
+    }
+
+    const row = existing.rows[0];
+    await pool.query("DELETE FROM networking_surveys WHERE id = $1", [row.id]);
+
+    await serverLog({
+      event: "admin.networking_survey.delete",
+      category: "REGISTRATION",
+      status: "SUCCESS",
+      registrationType: row.type,
+      registrationId: row.id,
+      applicantName: row.name,
+      contact: row.email || row.phone || "",
+      statusCode: 200,
+      ipAddress,
+      userAgent,
+    });
+
+    return res.json({ message: "Networking survey deleted.", deletedId: row.id });
   } catch {
     return res.status(500).json({ error: "Server error" });
   }
