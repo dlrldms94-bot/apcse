@@ -93,6 +93,9 @@
         <button type="button" class="detail-close" id="detailClose">×</button>
       </div>
       <div id="detailContent" class="detail-content"></div>
+      <div class="detail-modal-actions">
+        <button type="button" class="btn btn-danger" id="deleteSurveyBtn">이 신청 삭제</button>
+      </div>
     </div>
   </div>
 
@@ -101,6 +104,7 @@
     let adminPassword = "";
     let allSurveys = [];
     let capacitySlots = null;
+    let selectedSurvey = null;
 
     function adminHeaders(json) {
       const headers = { "x-admin-password": adminPassword.trim() };
@@ -245,12 +249,38 @@
         detailRow("이메일", row.email),
         detailRow("선택 워크숍", sessionSummary || "-"),
       ].filter(Boolean);
+      selectedSurvey = row;
       document.getElementById("detailContent").innerHTML = `<dl class="detail-list">${lines.join("")}</dl>`;
       document.getElementById("detailModal").hidden = false;
     }
 
     function closeDetail() {
+      selectedSurvey = null;
       document.getElementById("detailModal").hidden = true;
+    }
+
+    async function deleteSurvey() {
+      if (!selectedSurvey) return;
+      const { id, name } = selectedSurvey;
+      if (
+        !confirm(
+          `「${name}」 워크숍 사전 참여 신청을 삭제할까요?\n\nDB에서 영구 삭제되며 복구할 수 없습니다.`,
+        )
+      ) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/workshop-surveys/${id}`, {
+          method: "DELETE",
+          headers: adminHeaders(),
+        });
+        await readAdminJson(res);
+        closeDetail();
+        await loadSurveys();
+      } catch (error) {
+        alert(error.message);
+      }
     }
 
     function renderDashboard() {
@@ -320,6 +350,7 @@
     document.getElementById("searchInput").addEventListener("input", renderDashboard);
     document.getElementById("detailClose").addEventListener("click", closeDetail);
     document.getElementById("detailBackdrop").addEventListener("click", closeDetail);
+    document.getElementById("deleteSurveyBtn").addEventListener("click", deleteSurvey);
   </script>
 </body>
 </html>
